@@ -10,6 +10,7 @@ class Synopsis:
     CLASS INSPIRED ON PAPER: 'Correlation Sketches for Approximate Join-Correlation Queries' Takes a key, a series of
     attributes, and applies mmh3 hashing and Fibonacci hashing to create a synopsis or sketch of a table.
     """
+
     def __init__(self, table, attributes, key):
         self.table = table
         self.attributes = attributes
@@ -23,8 +24,7 @@ class Synopsis:
 
     def min_keys(self, n):
         """
-        MODIFIED TREE-ALGORITHM OF [9] in Join-Correlation Sketches. Instead of a tree, a binary heap was chosen to
-        only store the n keys needed to sample the table.
+        MODIFIED TREE-ALGORITHM OF [9] in Join-Correlation Sketches.
          :param n:
           :return:
         """
@@ -32,12 +32,13 @@ class Synopsis:
             self.low_high_values = self.compare_values(self.low_high_values, row[self.attributes].values)
             hash_mmh3 = mmh3.hash128(row[self.key], 3)
             hash_fibonacci = self.f_hash(hash_mmh3)
-            if len(self.min_hashed) < n:
-                heapq.heappush(self.min_hashed, (-hash_fibonacci, hash_mmh3, row[self.attributes].values))
-                self.sketch[(-hash_fibonacci, hash_mmh3)] = row[self.attributes].values
 
-            else:
-                if -hash_fibonacci > self.min_hashed[0][0]:
+            if (hash_fibonacci, hash_mmh3) not in self.sketch:
+                if len(self.min_hashed) < n:
+                    heapq.heappush(self.min_hashed, (-hash_fibonacci, hash_mmh3, row[self.attributes].values))
+                    self.sketch[(-hash_fibonacci, hash_mmh3)] = row[self.attributes].values
+
+                elif -hash_fibonacci > self.min_hashed[0][0]:
                     self.sketch.pop(self.min_hashed[0][:2])
                     heapq.heapreplace(self.min_hashed, (-hash_fibonacci, hash_mmh3, row[self.attributes].values))
                     self.sketch[(-hash_fibonacci, hash_mmh3)] = row[self.attributes].values
