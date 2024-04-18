@@ -19,8 +19,9 @@ class Synopsis:
         self.attributes_values[key] = table[key]
         self.sketch = {}
         self.min_hashed = []
-        self.low_high_values = [[np.inf, -np.inf] for _ in range(len(attributes))]
-        self.min_keys(n=2)
+        self.low_high_values = [np.array([np.inf, -np.inf]) for _ in range(len(attributes))]
+        self.n = 50
+        self.min_keys(n=self.n)
 
     def min_keys(self, n):
         """
@@ -45,10 +46,13 @@ class Synopsis:
 
     def join_sketch(self, sketch_y, attr):
         for key in self.sketch.keys():
-            if sketch_y.get(key) is not None:
-                self.sketch[key] = np.concatenate([self.sketch[key], sketch_y[key]])
+            if sketch_y.sketch.get(key) is not None:
+                self.sketch[key] = np.concatenate([self.sketch[key], sketch_y.sketch[key]])
             else:
                 self.sketch[key] = np.concatenate([self.sketch[key], np.array([None] * attr)])
+
+        self.attributes.extend(sketch_y.attributes)
+        print(self.attributes)
 
     @staticmethod
     def f_hash(key):
@@ -69,21 +73,97 @@ class Synopsis:
         return current_values
 
 
+class Correlation:
+    def __init__(self, synopsis: Synopsis):
+        self.synopsis = synopsis
+        self.df = pd.DataFrame(list(self.synopsis.sketch.values()),
+                               columns=self.synopsis.attributes)  # Ensure data is loaded into DataFrame
+        self.n = synopsis.n
+        self.compute_parameters()
+
+    def compute_parameters(self):
+        alpha = 0.05  # Significance level
+        C = self.df.max().max()  # Max value used for Hoeffding's bound calculations
+
+        # Calculate Pearson correlation using pandas
+        corr = self.df.corr().iloc[0, 1]
+        print("Observed correlation:", corr)
+
+        # Compute means, variances, and covariance
+        mu_a, mu_b = self.df['A'].mean(), self.df['B'].mean()
+        var_a, var_b = self.df['A'].var(ddof=0), self.df['B'].var(ddof=0)
+        cov_ab = self.df['A'].cov(self.df['B'])
+
+        # Hoeffding's bounds for means
+        t_means = math.sqrt(math.log(10 / alpha) * C ** 2 / (2 * self.n))
+        mean_a_low, mean_a_high = mu_a - t_means, mu_a + t_means
+        mean_b_low, mean_b_high = mu_b - t_means, mu_b + t_means
+
+        # Corrected Hoeffding's bounds for variances
+        t_vars = math.sqrt(math.log(10 / alpha) * (C ** 2 / 12) / (2 * self.n))
+        var_a_low, var_a_high = max(0, var_a - t_vars), var_a + t_vars
+        var_b_low, var_b_high = max(0, var_b - t_vars), var_b + t_vars
+        cov_ab_low, cov_ab_high = cov_ab - t_vars, cov_ab + t_vars
+
+        # More realistic bounds for correlation
+        denom_low = np.sqrt(var_a_low * var_b_low)
+        denom_high = np.sqrt(var_a_high * var_b_high)
+        corr_low = cov_ab_low / denom_high if denom_high != 0 else -1  # Set to -1 instead of inf to keep within
+        # possible correlation range
+        corr_high = cov_ab_high / denom_low if denom_low != 0 else 1  # Set to 1 for the same reason
+
+        print(f"Correlation bounds: {corr_low}, {corr_high}")
+
+        # Perform bootstrap correlation calculation
+        # $self.bootstrap_correlations()
+
+    def bootstrap_correlations(self, num_samples=1000):
+        bootstrap_corrs = []
+        for _ in range(num_samples):
+            sample_df = self.df.sample(n=self.n, replace=True)
+            sample_corr = sample_df.corr().iloc[0, 1]
+            bootstrap_corrs.append(sample_corr)
+
+        # Calculate the empirical confidence interval from the bootstrap distribution
+        lower_bound = np.percentile(bootstrap_corrs, 2.5)
+        upper_bound = np.percentile(bootstrap_corrs, 97.5)
+        print(f"Bootstrap 95% confidence interval for correlation: ({lower_bound}, {upper_bound})")
+
+
 ###
 # EXAMPLE INPUT DATA - FOR TESTING PURPOSES #
 ###
 
+# Set seed for reproducibility
+np.random.seed(0)
 
-# Creating a test DataFrame
-data = {
-    'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
-    'Age': [25, 30, 35, 40, 45],
-    'City': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix']
-}
-df = pd.DataFrame(data)
+# Number of data points
+n = 200
 
-sketchy = Synopsis(df, attributes=['Age'], key='Name')
-sketchy_y = Synopsis(df, attributes=['City'], key='Name')
-sketchy.join_sketch(sketchy_y.sketch, 1)
-print(sketchy.sketch)
-print(sketchy.low_high_values)
+# Generate a common key (e.g., sequential ID or any unique identifier)
+keys = np.arange(1, n + 1)
+
+# Mean and standard deviation for the two normally distributed variables
+mean1 = 50
+std1 = 10
+mean2 = 50
+std2 = 10
+
+# Generate the first variable
+x = np.random.normal(mean1, std1, n)
+
+# Generate the second variable with some correlation to the first
+correlation = 0.30
+y = correlation * x + np.sqrt(1 - correlation ** 2) * np.random.normal(mean2, std2, n)
+
+# Create a DataFrame with these variables and the common key
+df = pd.DataFrame({'Key': keys, 'A': x, 'B': y})
+
+sketchy = Synopsis(df, attributes=['A'], key='Key')
+sketchy_y = Synopsis(df, attributes=['B'], key='Key')
+sketchy.join_sketch(sketchy_y, 1)
+# print(sketchy.sketch)
+# print(sketchy.low_high_values)
+
+corr_test = Correlation(sketchy)
+print(df.corr())
