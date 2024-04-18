@@ -19,7 +19,6 @@ class Synopsis:
         self.attributes_values[key] = table[key]
         self.sketch = {}
         self.min_hashed = []
-        self.low_high_values = [np.array([np.inf, -np.inf]) for _ in range(len(attributes))]
         self.n = 50
         self.min_keys(n=self.n)
 
@@ -30,7 +29,6 @@ class Synopsis:
           :return:
         """
         for index, row in self.attributes_values.iterrows():
-            self.low_high_values = self.compare_values(self.low_high_values, row[self.attributes].values)
             hash_mmh3 = mmh3.hash128(row[self.key], 3)
             hash_fibonacci = self.f_hash(hash_mmh3)
 
@@ -52,7 +50,7 @@ class Synopsis:
                 self.sketch[key] = np.concatenate([self.sketch[key], np.array([None] * attr)])
 
         self.attributes.extend(sketch_y.attributes)
-        print(self.attributes)
+        return self
 
     @staticmethod
     def f_hash(key):
@@ -62,24 +60,13 @@ class Synopsis:
         hash_value = (rescaled_key * golden_ratio_conjugate_frac) % 1
         return hash_value
 
-    @staticmethod
-    def compare_values(current_values, new_values):
-        for i in range(len(current_values)):
-            if isinstance(new_values[i], str):  # Temporary condition while thinking to deal with categorical
-                continue
-
-            current_values[i][0] = min(current_values[i][0], new_values[i])  # Update low value in place
-            current_values[i][1] = max(current_values[i][1], new_values[i])  # Update high value in place
-        return current_values
-
 
 class Correlation:
     def __init__(self, synopsis: Synopsis):
         self.synopsis = synopsis
-        self.df = pd.DataFrame(list(self.synopsis.sketch.values()),
+        self.df = pd.DataFrame(self.synopsis.sketch.values(),
                                columns=self.synopsis.attributes)  # Ensure data is loaded into DataFrame
         self.n = synopsis.n
-        self.compute_parameters()
 
     def compute_parameters(self):
         alpha = 0.05  # Significance level
@@ -89,10 +76,13 @@ class Correlation:
         corr = self.df.corr().iloc[0, 1]
         print("Observed correlation:", corr)
 
+        att_a = self.synopsis.attributes[0]
+        att_b = self.synopsis.attributes[1]
+        print(self.synopsis.attributes)
         # Compute means, variances, and covariance
-        mu_a, mu_b = self.df['A'].mean(), self.df['B'].mean()
-        var_a, var_b = self.df['A'].var(ddof=0), self.df['B'].var(ddof=0)
-        cov_ab = self.df['A'].cov(self.df['B'])
+        mu_a, mu_b = self.df[att_a].mean(), self.df[att_b].mean()
+        var_a, var_b = self.df[att_a].var(ddof=0), self.df[att_b].var(ddof=0)
+        cov_ab = self.df[att_a].cov(self.df[att_b])
 
         # Hoeffding's bounds for means
         t_means = math.sqrt(math.log(10 / alpha) * C ** 2 / (2 * self.n))
@@ -117,6 +107,8 @@ class Correlation:
         # Perform bootstrap correlation calculation
         # $self.bootstrap_correlations()
 
+        return corr, (corr_low, corr_high)
+
     def bootstrap_correlations(self, num_samples=1000):
         bootstrap_corrs = []
         for _ in range(num_samples):
@@ -130,40 +122,3 @@ class Correlation:
         print(f"Bootstrap 95% confidence interval for correlation: ({lower_bound}, {upper_bound})")
 
 
-###
-# EXAMPLE INPUT DATA - FOR TESTING PURPOSES #
-###
-
-# Set seed for reproducibility
-np.random.seed(0)
-
-# Number of data points
-n = 200
-
-# Generate a common key (e.g., sequential ID or any unique identifier)
-keys = np.arange(1, n + 1)
-
-# Mean and standard deviation for the two normally distributed variables
-mean1 = 50
-std1 = 10
-mean2 = 50
-std2 = 10
-
-# Generate the first variable
-x = np.random.normal(mean1, std1, n)
-
-# Generate the second variable with some correlation to the first
-correlation = 0.30
-y = correlation * x + np.sqrt(1 - correlation ** 2) * np.random.normal(mean2, std2, n)
-
-# Create a DataFrame with these variables and the common key
-df = pd.DataFrame({'Key': keys, 'A': x, 'B': y})
-
-sketchy = Synopsis(df, attributes=['A'], key='Key')
-sketchy_y = Synopsis(df, attributes=['B'], key='Key')
-sketchy.join_sketch(sketchy_y, 1)
-# print(sketchy.sketch)
-# print(sketchy.low_high_values)
-
-corr_test = Correlation(sketchy)
-print(df.corr())
