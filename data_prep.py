@@ -11,20 +11,29 @@ class Feature:
 
 
 class Table:
+    """
+        Table: Class object for the tables. From this class, we construct T_core and T_candidates.
+        Each table have attributes of feat_corr, a hash table for each feature with their feature object.
+        It includes its sketch from Synopsys, its key, rank, correlation, confidence bounds, etc.
+    """
     @classmethod
-    def __init__(self, key, df):
+    def __init__(cls, key, df):
         # self.table = pd.read_csv("path")
-        self.table = df
-        self.rank = 0
-        self.sketch = sketches.Synopsis(self.table, list(self.table.columns[1:]), key)
-        self.key = key
-        self.feat_corr = {}
-        self.df_sketch = None
+        cls.table = df
+        cls.rank = 0
+        cls.sketch = sketches.Synopsis(cls.table, list(cls.table.columns[1:]), key)
+        cls.key = key
+        cls.feat_corr = {}
+        cls.df_sketch = None
 
     def calc_corr_gain(self, y_synopsis):
+        """
+        :param y_synopsis: Synopsys object of the target variable.
+        :return: None, save the correlation on the feature objects.
+        """
         y = y_synopsis.attributes[0]
-        sketch_y = self.sketch.join_sketch(y_synopsis, 1)
-        self.df_sketch = pd.DataFrame(sketch_y.sketch.values(), columns=self.sketch.attributes)
+        sketch_y = self.sketch.join_sketch(y_synopsis, 1)   # Join Table object sketch with the target attribute sketch
+        self.df_sketch = pd.DataFrame(sketch_y.sketch.values(), columns=self.sketch.attributes)  # DF of the Sketch
 
         for feat in self.table.columns:
             if feat == self.key:
@@ -32,7 +41,7 @@ class Table:
             else:
                 feat_obj = Feature(feat)
                 feat_obj.corr_target_variable, feat_obj.confidence_bound = (
-                    sketches.Correlation(self.df_sketch[[feat, y]]).compute_parameters())
+                    sketches.Correlation(self.df_sketch[[feat, y]]).compute_parameters())  # Current feature vs. Y
                 self.feat_corr[feat] = feat_obj
 
 
