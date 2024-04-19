@@ -62,6 +62,9 @@ class Synopsis:
 
 
 class Correlation:
+    """
+    Correlation class to calculate the correlation of features and their confidence bounds with the sketched from Synopsis class.
+    """
     def __init__(self, df):
         self.df = df  # Ensure data is loaded into DataFrame
         self.n = self.df.shape[0]
