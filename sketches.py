@@ -62,11 +62,10 @@ class Synopsis:
 
 
 class Correlation:
-    def __init__(self, synopsis: Synopsis):
-        self.synopsis = synopsis
-        self.df = pd.DataFrame(self.synopsis.sketch.values(),
-                               columns=self.synopsis.attributes)  # Ensure data is loaded into DataFrame
-        self.n = synopsis.n
+    def __init__(self, df):
+        self.df = df  # Ensure data is loaded into DataFrame
+        self.n = self.df.shape[0]
+        print(self.n)
 
     def compute_parameters(self):
         alpha = 0.05  # Significance level
@@ -76,9 +75,9 @@ class Correlation:
         corr = self.df.corr().iloc[0, 1]
         print("Observed correlation:", corr)
 
-        att_a = self.synopsis.attributes[0]
-        att_b = self.synopsis.attributes[1]
-        print(self.synopsis.attributes)
+        att_a = self.df.columns[0]
+        att_b = self.df.columns[1]
+        print(att_a, att_b)
         # Compute means, variances, and covariance
         mu_a, mu_b = self.df[att_a].mean(), self.df[att_b].mean()
         var_a, var_b = self.df[att_a].var(ddof=0), self.df[att_b].var(ddof=0)
