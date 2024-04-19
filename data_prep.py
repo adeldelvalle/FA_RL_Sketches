@@ -49,37 +49,39 @@ class Table:
 # EXAMPLE INPUT DATA - FOR TESTING PURPOSES #
 ###
 
-# Set seed for reproducibility
-np.random.seed(0)
-
-# Number of data points
-n = 200
-
-# Generate a common key (e.g., sequential ID or any unique identifier)
-keys = np.arange(1, n + 1)
-
-# Mean and standard deviation for the two normally distributed variables
-mean1 = 50
-std1 = 10
-mean2 = 50
-std2 = 10
-
-# Generate the first variable
-x = np.random.normal(mean1, std1, n)
-x1 = np.random.normal(mean1, std1, n)
-
-# Generate the second variable with some correlation to the first
-correlation = 0.30
-y = correlation * x + np.sqrt(1 - correlation ** 2) * np.random.normal(mean2, std2, n)
-
-# Create a DataFrame with these variables and the common key
-df = pd.DataFrame({'Key': keys, 'A': x, 'C': x1})
-df1 = pd.DataFrame({'Key': keys, 'B': y})
-
-sketchy = Table('Key', df)
-sketchy_y = sketches.Synopsis(df1, ['B'], key='Key')
-sketchy.calc_corr_gain(sketchy_y)
+# # Set seed for reproducibility
+# np.random.seed(0)
+#
+# # Number of data points
+# n = 200
+#
+# # Generate a common key (e.g., sequential ID or any unique identifier)
+# keys = np.arange(1, n + 1)
+#
+# # Mean and standard deviation for the two normally distributed variables
+# mean1 = 50
+# std1 = 10
+# mean2 = 50
+# std2 = 10
+#
+# # Generate the first variable
+# x = np.random.normal(mean1, std1, n)
+# x1 = np.random.normal(mean1, std1, n)
+#
+# # Generate the second variable with some correlation to the first
+# correlation = 0.30
+# y = correlation * x + np.sqrt(1 - correlation ** 2) * np.random.normal(mean2, std2, n)
+#
+# # Create a DataFrame with these variables and the common key
+# df = pd.DataFrame({'Key': keys, 'A': x, 'C': x1})
+# df1 = pd.DataFrame({'Key': keys, 'B': y})
+#
+# sketchy = Table('Key', df)
+# sketchy_y = sketches.Synopsis(df1, ['B'], key='Key')
+# sketchy.calc_corr_gain(sketchy_y)
 # print(sketchy.sketch)
 # print(sketchy.low_high_values)
+
+paths = ["data/Customer Flight Activity.csv", "data/Customer Loyalty History.csv"]
 
 print(sketchy.feat_corr['A'].corr_target_variable)
