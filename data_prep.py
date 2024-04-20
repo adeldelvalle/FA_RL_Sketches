@@ -77,6 +77,9 @@ class Table:
 
         return mi
 
+    #def calc_relevant_features(self):
+
+
 
 ###
 # EXAMPLE INPUT DATA - FOR TESTING PURPOSES #
@@ -97,7 +100,6 @@ t_core.calc_corr_gain(target_synopsis)
 t_candidate.table.drop(['Salary'], axis=1, inplace=True)
 t_candidate.get_sketch()
 
-print(target_synopsis.sketch, t_candidate.sketch.sketch)
 # t_candidate.sketch.join_sketch(t_core.sketch, len(t_core.sketch.attributes))
 
 
