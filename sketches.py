@@ -66,6 +66,7 @@ class Correlation:
     """
     Correlation class to calculate the correlation of features and their confidence bounds with the sketched from Synopsis class.
     """
+
     def __init__(self, df):
         self.df = df  # Ensure data is loaded into DataFrame
         self.n = self.df.shape[0]
@@ -112,7 +113,7 @@ class Correlation:
 
             return corr, (corr_low, corr_high)
         except:
-            return 0,0
+            return 0, (0, 0)
 
     def bootstrap_correlations(self, num_samples=50):
         bootstrap_corrs = []

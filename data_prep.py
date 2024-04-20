@@ -3,6 +3,7 @@ import numpy as np
 import sketches
 from sklearn.metrics import mutual_info_score
 from sklearn.impute import SimpleImputer
+import heapq
 
 pd.set_option('display.max_columns', None)  # Ensures all columns are displayed
 pd.set_option('display.max_rows', None)  # Ensures all rows are displayed
@@ -16,6 +17,9 @@ class Feature:
         self.corr_target_variable = None
         self.confidence_bound = None
         self.info_gain = None
+        self.ci_length = None
+        self.abs_corr = None
+        self.ranking = None
 
 
 class Table:
@@ -34,6 +38,7 @@ class Table:
         self.key = key
         self.feat_corr = {}
         self.df_sketch = None
+        self.highest_k_features = []
 
     def get_sketch(self):
         self.sketch = sketches.Synopsis(self.table, list(self.table.columns[1:]), self.key)
@@ -45,12 +50,12 @@ class Table:
         """
         y = y_synopsis.attributes[0]
         sketch_y = self.sketch.join_sketch(y_synopsis, 1)  # Join Table object sketch with the target attribute sketch
-        self.df_sketch = pd.DataFrame(sketch_y.sketch.values(), columns=self.sketch.attributes)  # DF of the Sketch
+        self.df_sketch = pd.DataFrame(sketch_y.sketch.values(),
+                                      columns=self.sketch.attributes)  # DF of the Sketch
+
         if self.df_sketch[y].isna().any():  # TEMP STRATEGY FOR NAN VALUES
             target_imputer = SimpleImputer(strategy='most_frequent')
             self.df_sketch[y] = target_imputer.fit_transform(self.df_sketch[y].values.reshape(-1, 1)).ravel()
-
-        print(self.df_sketch[y].isna().sum())
 
         for feat in self.table.columns:
             if feat == self.key:
@@ -59,6 +64,9 @@ class Table:
                 feat_obj = Feature(feat)
                 feat_obj.corr_target_variable, feat_obj.confidence_bound = (
                     sketches.Correlation(self.df_sketch[[feat, y]]).compute_parameters())  # Current feature vs. Y
+                feat_obj.ci_length = feat_obj.confidence_bound[1] - feat_obj.confidence_bound[0]  # CI Length Risk
+                # Scoring
+                feat_obj.abs_corr = abs(feat_obj.corr_target_variable)  # Absolute corr for risk scoring
                 feat_obj.info_gain = self.calc_mutual_info(feat, y)
                 self.feat_corr[feat] = feat_obj
 
@@ -77,8 +85,14 @@ class Table:
 
         return mi
 
-    #def calc_relevant_features(self):
-
+    def feature_scoring(self, k):
+        for feat in self.feat_corr.keys():
+            feat_obj = self.feat_corr[feat]
+            feat_obj.ranking = feat_obj.abs_corr * (1 - feat_obj.ci_length)
+            if len(self.highest_k_features) < k:
+                heapq.heappush(self.highest_k_features, (-feat_obj.ranking, feat))
+            elif -feat_obj.ranking > self.highest_k_features[0][0]:
+                heapq.heapreplace(self.highest_k_features, (-feat_obj.ranking, feat))
 
 
 ###
@@ -104,6 +118,8 @@ t_candidate.get_sketch()
 
 
 t_candidate.calc_corr_gain(target_synopsis)
+t_core.feature_scoring(3)
+print(t_core.highest_k_features)
 
 # target = t_core.table.columns
 # print(target, t_candidate.table.columns)
