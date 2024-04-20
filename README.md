@@ -1,4 +1,4 @@
-# Reinforcement Learning for Feature Augmentation with Join-Correlation-Mutual Information sketches
+# Informed Sketches Optimized Feature Augmentation with Reinforcement Learning (ISOFA) 
 ### Work on progress. 
 
 ### Papers referenced in our code
