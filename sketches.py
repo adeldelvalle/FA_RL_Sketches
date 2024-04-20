@@ -20,7 +20,7 @@ class Synopsis:
         self.attributes_values[key] = table[key]
         self.sketch = {}
         self.min_hashed = []
-        self.n = 100
+        self.n = 500
         self.min_keys(n=self.n)
 
     def min_keys(self, n):
@@ -47,7 +47,6 @@ class Synopsis:
         for key in self.sketch.keys():
             if sketch_y.sketch.get(key) is not None:
                 self.sketch[key] = np.concatenate([self.sketch[key], sketch_y.sketch[key]])
-                print(1)
             else:
                 self.sketch[key] = np.concatenate([self.sketch[key], np.array([None] * attr)])
 
@@ -67,7 +66,6 @@ class Correlation:
     """
     Correlation class to calculate the correlation of features and their confidence bounds with the sketched from Synopsis class.
     """
-
     def __init__(self, df):
         self.df = df  # Ensure data is loaded into DataFrame
         self.n = self.df.shape[0]
@@ -110,13 +108,13 @@ class Correlation:
             print(f"Correlation bounds: {corr_low}, {corr_high}")
 
             # Perform bootstrap correlation calculation
-            # $self.bootstrap_correlations()
+            self.bootstrap_correlations()
 
             return corr, (corr_low, corr_high)
         except:
             return 0,0
 
-    def bootstrap_correlations(self, num_samples=1000):
+    def bootstrap_correlations(self, num_samples=50):
         bootstrap_corrs = []
         for _ in range(num_samples):
             sample_df = self.df.sample(n=self.n, replace=True)
