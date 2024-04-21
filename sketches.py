@@ -109,9 +109,9 @@ class Correlation:
             print(f"Correlation bounds: {corr_low}, {corr_high}")
 
             # Perform bootstrap correlation calculation
-            self.bootstrap_correlations()
+            boot_low, boot_high = self.bootstrap_correlations()
 
-            return corr, (corr_low, corr_high)
+            return corr, (boot_low, boot_high)
         except:
             return 0, (0, 0)
 
@@ -126,3 +126,5 @@ class Correlation:
         lower_bound = np.percentile(bootstrap_corrs, 2.5)
         upper_bound = np.percentile(bootstrap_corrs, 97.5)
         print(f"Bootstrap 95% confidence interval for correlation: ({lower_bound}, {upper_bound})")
+
+        return lower_bound, upper_bound

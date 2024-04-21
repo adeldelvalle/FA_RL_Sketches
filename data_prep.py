@@ -33,7 +33,7 @@ class Table:
         self.table = pd.read_csv(path)
         self.table[key] = self.table[key].astype(str)
         # cls.table = df
-        self.rank = 0
+        self.score = 0
         self.sketch = None
         self.key = key
         self.feat_corr = {}
@@ -94,6 +94,12 @@ class Table:
             elif -feat_obj.ranking > self.highest_k_features[0][0]:
                 heapq.heapreplace(self.highest_k_features, (-feat_obj.ranking, feat))
 
+        self.rank()
+
+    def rank(self):
+        rankings = [abs(x[0]) for x in self.highest_k_features]
+        self.score = np.mean(rankings)
+
 
 
 ###
@@ -108,11 +114,13 @@ t_core.table = t_core.table[t_core.table["Year"] == 2018].groupby("Loyalty Numbe
 t_core.table.drop(['Month', 'Year'], axis=1, inplace=True)
 t_core.get_sketch()
 t_candidate = Table('Loyalty Number', paths[1])
+t_candidate.table["Cancellation Year"] = t_candidate.table["Cancellation Year"].apply(
+    lambda x: 1 if pd.notna(x) else 0)
 
-target_synopsis = sketches.Synopsis(t_candidate.table, attributes=["Salary"], key='Loyalty Number')
+target_synopsis = sketches.Synopsis(t_candidate.table, attributes=["Cancellation Year"], key='Loyalty Number')
 
 t_core.calc_corr_gain(target_synopsis)
-t_candidate.table.drop(['Salary'], axis=1, inplace=True)
+t_candidate.table.drop(['Cancellation Year', 'Cancellation Month'], axis=1, inplace=True)
 t_candidate.get_sketch()
 
 # t_candidate.sketch.join_sketch(t_core.sketch, len(t_core.sketch.attributes))
@@ -120,8 +128,11 @@ t_candidate.get_sketch()
 
 t_candidate.calc_corr_gain(target_synopsis)
 t_core.feature_scoring(3)
+t_candidate.feature_scoring(3)
 print(t_core.highest_k_features)
-
+print(t_core.score)
+print(t_candidate.highest_k_features)
+print(t_candidate.score)
 # target = t_core.table.columns
 # print(target, t_candidate.table.columns)
 # a = t_candidate.table[["Loyalty Number", "Salary"]]
