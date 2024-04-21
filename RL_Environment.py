@@ -1,6 +1,9 @@
 from sklearn import svm
 from sklearn.model_selection import train_test_split
 import numpy as np
+from xgboost import XGBClassifier
+import xgboost
+
 from sklearn.metrics import roc_auc_score
 from data_prep import Table, Feature
 from sklearn.metrics import adjusted_mutual_info_score, mean_squared_error, roc_auc_score
@@ -63,9 +66,14 @@ class ISOFAEnvironment:
         self.init_environment()
 
     def init_environment(self):
-        self.current_model = svm.SVC()
+        self.current_joined_training_set = self.t_core.table.copy()
+        self.current_training_set = self.t_core.table.copy()
+
+        # Init cur_state
+        self.get_current_state(0)
+
         X_train, X_test, y_train, y_test = self.split_data(self.t_core.table)
-        self.train_subsequent_learner(X_train, y_train)
+        self.current_model = self.train_subsequent_learner(X_train, y_train)
 
         print('-' * 20 + "Init:" + '-' * 20)
         train_auc = self.test_subsequent_learner(X_train, y_train)
@@ -75,6 +83,8 @@ class ISOFAEnvironment:
         print(f"Test RMSE Score: {test_auc}")
 
         self.curr_score = test_auc
+        self.original_score = test_auc
+
 
         # Identify valid actions (all tables can be selected initially)
         self.action_table = [_ for _ in range(len(self.t_cand))]
@@ -92,15 +102,49 @@ class ISOFAEnvironment:
         self.generate_valid_feature_action()
         self.try_num = 0  # Reset attempt counter
 
+    def reset(self):
+        # Init training set
+        self.current_joined_training_set = self.t_core.table.copy()
+
+        self.current_training_set = self.t_core.table.copy()
+
+        # Init the model
+        X_train, X_test, y_train, y_test = self.split_data(self.current_training_set)
+        self.current_model = self.train_subsequent_learner(X_train, y_train)
+
+        test_auc = self.test_subsequent_learner(X_test, y_test)
+
+        print('-' * 20 + "Reset:" + '-' * 20)
+        print(f"Test RMSE Score: {test_auc}")
+
+        self.cur_score = test_auc
+
+        # Check the valid action
+        self.action_table_valid = [_ for _ in self.action_table]
+        self.selected_table = []
+
+        self.action_feature_valid = []
+        self.generate_valid_feature_action()
+        self.selected_feature = []
+
+        self.try_num = 0
+
     def split_data(self, table):
         y = table[self.target]
         X = table.drop([self.target, self.key], axis=1)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, random_state=104, test_size=0.25, shuffle=True)
+        X_train, X_test, y_train, y_test = train_test_split(X,
+                                                            y,
+                                                            random_state=104,
+                                                            test_size=0.25,
+                                                            shuffle=True)
         return X_train, X_test, y_train, y_test
 
     def train_subsequent_learner(self, X_train, y_train):
-        self.current_model.fit(X_train, y_train)
+        new_model = XGBClassifier(enable_categorical=True,
+                                  use_label_encoder=False,
+                                  eval_metric='rmse')
+        new_model.fit(X_train, y_train)
+        return new_model
 
     def test_subsequent_learner(self, X_test, y_test):
         y_pred = self.current_model.predict(X_test)
@@ -199,12 +243,14 @@ class ISOFAEnvironment:
         if action[0] == 't':
             true_action = self.action_table[action[1]]
 
-            self.current_joined_training_set = pd.merge(self.current_training_set, self.t_cand[true_action], how='left',
+            self.current_joined_training_set = pd.merge(self.current_training_set,
+                                                        self.t_cand[true_action].table,
+                                                        how='left',
                                                         on=self.key)
 
-            X_train, y_train, X_test, y_test = self.split_data(self.current_joined_training_set)
+            X_train, X_test, y_train, y_test = self.split_data(self.current_joined_training_set)
 
-            self.current_model = self.model_training(X_train, y_train)
+            self.current_model = self.train_subsequent_learner(X_train, y_train)
 
             test_rmse = self.test_subsequent_learner(X_test, y_test)
 
@@ -231,7 +277,7 @@ class ISOFAEnvironment:
         elif action[0] == 'f':
             true_action = self.action_feature[action[1]]
             selected_table_cols = list(x[1] for x in self.t_cand[true_action[0]].highest_k_features)
-            selected_table_cols.remove(self.key)
+            #selected_table_cols.remove(self.key)
 
             # Add new features
             tmp_repo_train_table = self.t_cand[true_action[0]].table.loc[:,
@@ -240,10 +286,10 @@ class ISOFAEnvironment:
             self.current_training_set = pd.merge(self.current_training_set, tmp_repo_train_table, how='left',
                                                  on=self.key)
 
-            X_train, y_train, X_test, y_test = self.split_data(self.current_training_set)
+            X_train, X_test, y_train, y_test = self.split_data(self.current_training_set)
             # Train and test on new dataset
 
-            self.current_model = self.model_training(X_train, y_train)
+            self.current_model = self.train_subsequent_learner(X_train, y_train)
             test_rmse = self.test_subsequent_learner(X_test, y_test)
 
             # return
@@ -286,7 +332,7 @@ class ISOFAEnvironment:
         # Iterate through selected tables
         for repo_table_id in self.selected_table:
             tmp_repo_table_cols = list(x[1] for x in self.t_cand[repo_table_id].highest_k_features)
-            tmp_repo_table_cols.remove(self.key)
+            #tmp_repo_table_cols.remove(self.key)
             # Iterate through features in the current table
             for j in range(len(tmp_repo_table_cols)):
                 # Create a candidate action (table ID, feature index)
@@ -294,14 +340,9 @@ class ISOFAEnvironment:
                 # Add the index of the valid action to the action_feature_valid list
                 self.action_feature_valid.append(action)
 
-    def model_training(self, X_train, Y_train):
-        new_model = svm.SVC()
-        new_model.fit(X_train, Y_train, eval_metric='rmse')
-        return new_model
-
     def add_valid_feature_action(self, new_table_id):
         tmp_repo_table_cols = list(x[1] for x in self.t_cand[new_table_id].highest_k_features)
-        tmp_repo_table_cols.remove(self.key)
+        # tmp_repo_table_cols.remove(self.key)
         for j in range(len(tmp_repo_table_cols)):
             action = self.action_feature.index([new_table_id, j])
             self.action_feature_valid.append(action)
@@ -323,3 +364,10 @@ class ISOFAEnvironment:
 
     def get_state_len(self):
         return len(self.action_table) + len(self.action_feature) + 3 * len(self.action_feature)
+
+    def get_training_dataset(self):
+        return self.split_data(self.current_training_set)
+
+    def get_current_features(self):
+        cur_train_set_col = list(self.current_training_set.columns)
+        return cur_train_set_col

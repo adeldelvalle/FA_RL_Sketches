@@ -5,8 +5,6 @@ from sklearn.metrics import mutual_info_score
 from sklearn.impute import SimpleImputer
 import heapq
 
-
-
 pd.set_option('display.max_columns', None)  # Ensures all columns are displayed
 pd.set_option('display.max_rows', None)  # Ensures all rows are displayed
 pd.set_option('display.width', None)  # Uses maximum width to display output

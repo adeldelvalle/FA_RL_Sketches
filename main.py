@@ -24,15 +24,15 @@ t_candidate.table["Cancellation Year"] = t_candidate.table["Cancellation Year"].
 target_synopsis = sketches.Synopsis(t_candidate.table, attributes=["Cancellation Year"], key='Loyalty Number')
 
 t_core.calc_corr_gain(target_synopsis)
-t_candidate.table.drop(['Cancellation Year', 'Cancellation Month'], axis=1, inplace=True)
+t_candidate.table.drop(['Cancellation Month'], axis=1, inplace=True)
 t_candidate.get_sketch()
 
 # t_candidate.sketch.join_sketch(t_core.sketch, len(t_core.sketch.attributes))
 
 
-t_candidate.calc_corr_gain(target_synopsis)
-t_core.feature_scoring(3)
-t_candidate.feature_scoring(3)
+#t_candidate.calc_corr_gain(target_synopsis)
+t_core.feature_scoring(7)
+#t_candidate.feature_scoring(3)
 print(t_core.highest_k_features)
 print(t_core.score)
 print(t_candidate.highest_k_features)
@@ -44,9 +44,15 @@ print(t_candidate.score)
 
 # print(df.corr())
 # print(sketchy.feat_corr['A'].corr_target_variable)
+for feat in t_core.table:
+    if t_core.table[feat].dtype == 'object':
+        t_core.table[feat] = t_core.table[feat].astype('category')
+for feat in t_candidate.table:
+    if t_candidate.table[feat].dtype == 'object':
+        t_candidate.table[feat] = t_candidate.table[feat].astype('category')
 
 model_target = 0
-max_try_num = 4
+max_try_num = 2
 
 print("entra")
 env = ISOFAEnvironment(t_candidate, [t_core], 'Loyalty Number', 'Cancellation Year', max_try_num)

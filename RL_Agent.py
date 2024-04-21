@@ -198,8 +198,10 @@ class Autofeature_agent(object):
     def train_workload(self):
         with open('information_rl.csv', 'w') as file:
             file.write('iteration, accuracy\n')
-            X_test, Y_test = self.env.get_test_dataset()
-            test_mse = self.env.model_test_rmse(X_test, Y_test)
+            X_train, X_test, Y_train, Y_test = self.env.get_training_dataset()
+            print("se rompio")
+            test_mse = self.env.test_subsequent_learner(X_test, Y_test)
+            print("paso")
             file.write(f'0, {test_mse}\n')
 
             episode_num = 40
@@ -218,11 +220,9 @@ class Autofeature_agent(object):
                     state_next, reward, done = self.env.step(action)
                     if done:
                         counter += 1
-
-                        X_train, Y_train = self.env.get_training_dataset()
-                        self.env.current_model = self.env.model_training(X_train, Y_train)
-                        X_test, Y_test = self.env.get_test_dataset()
-                        test_mse = self.env.model_test_rmse(X_test, Y_test)
+                        X_train, X_test, Y_train, Y_test = self.env.get_training_dataset()
+                        self.env.current_model = self.env.train_subsequent_learner(X_train, Y_train)
+                        test_mse = self.env.test_subsequent_learner(X_test, Y_test)
                         file.write(f'{counter}, {test_mse}\n')
 
                         time_end = time.time()
@@ -232,7 +232,9 @@ class Autofeature_agent(object):
                         # print("The selected data are：")
                         # for each_cluster_action in action:
                         #     print("Cluster：" + str(each_cluster_action[0]) + ", Ratio: " + str(each_cluster_action[1]))
-                        print(f"The number of features in current training set：{self.env.get_current_features()}")
+                        print(f"The number of features in current training set：{len(self.env.get_current_features())}")
+                        print(f"Features included：{self.env.get_current_features()}")
+
                         print("The RMSE of current model：" + str(self.env.cur_score))
                         print("Benefit：" + str(max(0, self.env.cur_score - self.env.original_score)))
                         print("Time：" + str(time_end - time_start))
