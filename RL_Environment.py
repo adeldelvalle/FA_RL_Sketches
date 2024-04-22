@@ -15,14 +15,14 @@ class ISOFAEnvironment:
     """
     Environment of the [Informed-Sketched Optimized Feature Augmentation] Reinforcement Learning Algorithm.
     """
-
     def __init__(self, core_table, cand_tables, key, target, max_try_num):
         # environment state, reward variables
+
         self.try_num = None
         self.prev_state = None
         self.cur_state = None
         self.original_score = None
-        self.curr_score = None
+        self.cur_score = None
         self.prev_score = None
         self.current_model = None
         self.past_model = None
@@ -65,6 +65,8 @@ class ISOFAEnvironment:
         # self.update_action_space()
         self.init_environment()
 
+    # -------------------- REINFORCEMENT LEARNING ENVIRONMENT METHODS  ----------------------- #
+
     def init_environment(self):
         self.current_joined_training_set = self.t_core.table.copy()
         self.current_training_set = self.t_core.table.copy()
@@ -82,9 +84,8 @@ class ISOFAEnvironment:
         test_auc = self.test_subsequent_learner(X_test, y_test)
         print(f"Test RMSE Score: {test_auc}")
 
-        self.curr_score = test_auc
+        self.cur_score = test_auc
         self.original_score = test_auc
-
 
         # Identify valid actions (all tables can be selected initially)
         self.action_table = [_ for _ in range(len(self.t_cand))]
@@ -128,30 +129,6 @@ class ISOFAEnvironment:
         self.selected_feature = []
 
         self.try_num = 0
-
-    def split_data(self, table):
-        y = table[self.target]
-        X = table.drop([self.target, self.key], axis=1)
-        X_train, X_test, y_train, y_test = train_test_split(X,
-                                                            y,
-                                                            random_state=104,
-                                                            test_size=0.25,
-                                                            shuffle=True)
-        return X_train, X_test, y_train, y_test
-
-    def train_subsequent_learner(self, X_train, y_train):
-        new_model = XGBClassifier(enable_categorical=True,
-                                  use_label_encoder=False,
-                                  eval_metric='rmse')
-        new_model.fit(X_train, y_train)
-        return new_model
-
-    def test_subsequent_learner(self, X_test, y_test):
-        y_pred = self.current_model.predict(X_test)
-        accuracy = np.mean(y_pred == y_test)
-        print(f"Model Accuracy: {accuracy}%")
-        rmse_score = roc_auc_score(y_test, y_pred)
-        return rmse_score
 
     def get_current_state(self, update_type):
         """
@@ -201,23 +178,11 @@ class ISOFAEnvironment:
             for i in range(len(selected_table_cols)):
                 # Variance
                 cha_vari = self.current_joined_training_set[selected_table_cols[i]].values.var()
-
-                # PCC
-                covar = self.current_joined_training_set[selected_table_cols[i]].cov(
-                    self.current_joined_training_set[self.target])
-                var_1 = self.current_joined_training_set[selected_table_cols[i]].var()
-                var_2 = self.current_joined_training_set[self.target].var()
-
-                if var_1 * var_2 == 0:
-                    cha_pcc = 0
-                else:
-                    cha_pcc = covar / math.sqrt(var_1 * var_2)
-
-                # MI
-                cha_mi = adjusted_mutual_info_score(
-                    self.current_joined_training_set[selected_table_cols[i]].fillna(-1).values,
-                    self.current_joined_training_set[self.target].values)
-
+                # Statistics from the sketch
+                cha_pcc = self.t_cand[self.selected_table[-1]].feat_corr[
+                    selected_table_cols[i]].corr_target_variable
+                cha_mi = self.t_cand[self.selected_table[-1]].feat_corr[selected_table_cols[i]].info_gain
+                # Store the calculated characteristics for the corresponding feature
                 self.feature_charac_vector[self.selected_table[-1]][i][0] = cha_vari
                 self.feature_charac_vector[self.selected_table[-1]][i][1] = cha_pcc
                 self.feature_charac_vector[self.selected_table[-1]][i][2] = cha_mi
@@ -243,6 +208,7 @@ class ISOFAEnvironment:
         if action[0] == 't':
             true_action = self.action_table[action[1]]
 
+            # Possible substitution for sketch
             self.current_joined_training_set = pd.merge(self.current_training_set,
                                                         self.t_cand[true_action].table,
                                                         how='left',
@@ -277,7 +243,7 @@ class ISOFAEnvironment:
         elif action[0] == 'f':
             true_action = self.action_feature[action[1]]
             selected_table_cols = list(x[1] for x in self.t_cand[true_action[0]].highest_k_features)
-            #selected_table_cols.remove(self.key)
+            # selected_table_cols.remove(self.key)
 
             # Add new features
             tmp_repo_train_table = self.t_cand[true_action[0]].table.loc[:,
@@ -311,6 +277,53 @@ class ISOFAEnvironment:
                 done = False
                 return self.cur_state, self.cur_score - self.prev_score, done
 
+    # -------------------- REINFORCEMENT LEARNING ACTION SPACE  ----------------------- #
+
+    def generate_valid_feature_action(self):
+        # Iterate through selected tables
+        for repo_table_id in self.selected_table:
+            tmp_repo_table_cols = list(x[1] for x in self.t_cand[repo_table_id].highest_k_features)
+            # tmp_repo_table_cols.remove(self.key)
+            # Iterate through features in the current table
+            for j in range(len(tmp_repo_table_cols)):
+                # Create a candidate action (table ID, feature index)
+                action = self.action_feature.index([repo_table_id, j])
+                # Add the index of the valid action to the action_feature_valid list
+                self.action_feature_valid.append(action)
+
+    def add_valid_feature_action(self, new_table_id):
+        tmp_repo_table_cols = list(x[1] for x in self.t_cand[new_table_id].highest_k_features)
+        # tmp_repo_table_cols.remove(self.key)
+        for j in range(len(tmp_repo_table_cols)):
+            action = self.action_feature.index([new_table_id, j])
+            self.action_feature_valid.append(action)
+
+    # ----------------------- SUB-SEQUENT LEARNER METHODS  ----------------------- #
+
+    def split_data(self, table):
+        y = table[self.target]
+        X = table.drop([self.target, self.key], axis=1)
+        X_train, X_test, y_train, y_test = train_test_split(X,
+                                                            y,
+                                                            random_state=104,
+                                                            test_size=0.25,
+                                                            shuffle=True)
+        return X_train, X_test, y_train, y_test
+
+    def train_subsequent_learner(self, X_train, y_train):
+        new_model = XGBClassifier(enable_categorical=True,
+                                  use_label_encoder=False,
+                                  eval_metric='auc')
+        new_model.fit(X_train, y_train)
+        return new_model
+
+    def test_subsequent_learner(self, X_test, y_test):
+        y_pred = self.current_model.predict(X_test)
+        accuracy = np.mean(y_pred == y_test)
+        print(f"Model Accuracy: {accuracy}%")
+        rmse_score = roc_auc_score(y_test, y_pred)
+        return rmse_score
+
     def check_corr(self, table, feature):
         sketch = table.df_sketch[[feature, self.key]]
         self.t_core.df_sketch.join(sketch, how="left", on=self.key)
@@ -328,24 +341,7 @@ class ISOFAEnvironment:
             print(f"Feature {feature} is not highly correlated. Adding to the core table.")
             return True
 
-    def generate_valid_feature_action(self):
-        # Iterate through selected tables
-        for repo_table_id in self.selected_table:
-            tmp_repo_table_cols = list(x[1] for x in self.t_cand[repo_table_id].highest_k_features)
-            #tmp_repo_table_cols.remove(self.key)
-            # Iterate through features in the current table
-            for j in range(len(tmp_repo_table_cols)):
-                # Create a candidate action (table ID, feature index)
-                action = self.action_feature.index([repo_table_id, j])
-                # Add the index of the valid action to the action_feature_valid list
-                self.action_feature_valid.append(action)
-
-    def add_valid_feature_action(self, new_table_id):
-        tmp_repo_table_cols = list(x[1] for x in self.t_cand[new_table_id].highest_k_features)
-        # tmp_repo_table_cols.remove(self.key)
-        for j in range(len(tmp_repo_table_cols)):
-            action = self.action_feature.index([new_table_id, j])
-            self.action_feature_valid.append(action)
+    # -------------------- GETTERS ----------------------- #
 
     def get_table_action_len(self):
         return len(self.action_table)
