@@ -18,6 +18,7 @@ class ISOFAEnvironment:
 
     def __init__(self, core_table, cand_tables, key, target, max_try_num):
         # environment state, reward variables
+
         self.try_num = None
         self.prev_state = None
         self.cur_state = None
@@ -142,7 +143,7 @@ class ISOFAEnvironment:
     def train_subsequent_learner(self, X_train, y_train):
         new_model = XGBClassifier(enable_categorical=True,
                                   use_label_encoder=False,
-                                  eval_metric='rmse')
+                                  eval_metric='auc')
         new_model.fit(X_train, y_train)
         return new_model
 
@@ -199,28 +200,39 @@ class ISOFAEnvironment:
             # selected_table_cols.remove(self.index_col)
 
             for i in range(len(selected_table_cols)):
-                # Variance
-                cha_vari = self.current_joined_training_set[selected_table_cols[i]].values.var()
+                try:
+                    # Variance
+                    cha_vari = self.current_joined_training_set[selected_table_cols[i]].values.var()
 
-                # PCC
-                covar = self.current_joined_training_set[selected_table_cols[i]].cov(
-                    self.current_joined_training_set[self.target])
-                var_1 = self.current_joined_training_set[selected_table_cols[i]].var()
-                var_2 = self.current_joined_training_set[self.target].var()
+                    # PCC
+                    covar = self.current_joined_training_set[selected_table_cols[i]].cov(
+                        self.current_joined_training_set[self.target])
+                    var_1 = self.current_joined_training_set[selected_table_cols[i]].var()
+                    var_2 = self.current_joined_training_set[self.target].var()
 
-                if var_1 * var_2 == 0:
-                    cha_pcc = 0
-                else:
-                    cha_pcc = covar / math.sqrt(var_1 * var_2)
+                    if var_1 * var_2 == 0:
+                        cha_pcc = 0
+                    else:
+                        cha_pcc = covar / math.sqrt(var_1 * var_2)
 
-                # MI
-                cha_mi = adjusted_mutual_info_score(
-                    self.current_joined_training_set[selected_table_cols[i]].fillna(-1).values,
-                    self.current_joined_training_set[self.target].values)
+                    # MI
+                    cha_mi = adjusted_mutual_info_score(
+                        self.current_joined_training_set[selected_table_cols[i]].fillna(-1).values,
+                        self.current_joined_training_set[self.target].values)
 
-                self.feature_charac_vector[self.selected_table[-1]][i][0] = cha_vari
-                self.feature_charac_vector[self.selected_table[-1]][i][1] = cha_pcc
-                self.feature_charac_vector[self.selected_table[-1]][i][2] = cha_mi
+                    self.feature_charac_vector[self.selected_table[-1]][i][0] = cha_vari
+                    self.feature_charac_vector[self.selected_table[-1]][i][1] = cha_pcc
+                    self.feature_charac_vector[self.selected_table[-1]][i][2] = cha_mi
+                except:
+                    if -1 not in self.current_joined_training_set[selected_table_cols[i]].cat.categories:
+                        self.current_joined_training_set[selected_table_cols[i]] = self.current_joined_training_set[selected_table_cols[i]].cat.add_categories(-1)
+
+                    cha_mi = adjusted_mutual_info_score(
+                        self.current_joined_training_set[selected_table_cols[i]].fillna(-1).values,
+                        self.current_joined_training_set[self.target].values)
+                    self.feature_charac_vector[self.selected_table[-1]][i][0] = 0
+                    self.feature_charac_vector[self.selected_table[-1]][i][1] = 0
+                    self.feature_charac_vector[self.selected_table[-1]][i][2] = cha_mi
 
         elif update_type == 2:
             action_pos = self.selected_feature[-1]

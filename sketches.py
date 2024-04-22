@@ -15,7 +15,6 @@ class Synopsis:
         self.table = table
         self.attributes = attributes
         self.key = key
-        print(self.key)
         self.attributes_values = table[attributes]
         self.attributes_values[key] = table[key]
         self.sketch = {}
