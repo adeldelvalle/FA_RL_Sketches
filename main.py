@@ -28,7 +28,7 @@ t_core.calc_corr_gain(target_synopsis)
 t_candidate.table.drop(['Cancellation Month'], axis=1, inplace=True)
 t_candidate.get_sketch()
 
-t_core.feature_scoring(7)
+t_core.feature_scoring(5)
 print(t_core.highest_k_features)
 print(t_core.score)
 print(t_candidate.highest_k_features)
