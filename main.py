@@ -67,7 +67,7 @@ mem_cap = 1000
 BDQN_batch_size = 3
 
 autodata = Autofeature_agent(env, BDQN_batch_size, learning_rate, reward_decay, e_greedy, update_freq, mem_cap,
-                             BDQN_batch_size)
+                                BDQN_batch_size)
 
 print("Agent Ready!")
 
