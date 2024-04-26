@@ -20,6 +20,7 @@ class Feature:
         self.ci_length = None
         self.abs_corr = None
         self.ranking = None
+        self.var = None
 
 
 class Table:
@@ -41,7 +42,7 @@ class Table:
         self.highest_k_features = []
 
     def get_sketch(self):
-        self.sketch = sketches.Synopsis(self.table, list(self.table.columns[1:]), self.key)
+        self.sketch = sketches.Synopsis(self.table, list(self.table.columns), self.key)
 
     def calc_corr_gain(self, y_synopsis):
         """
@@ -62,7 +63,7 @@ class Table:
                 continue
             else:
                 feat_obj = Feature(feat)
-                feat_obj.corr_target_variable, feat_obj.confidence_bound = (
+                feat_obj.corr_target_variable, feat_obj.confidence_bound, feat_obj.var = (
                     sketches.Correlation(self.df_sketch[[feat, y]]).compute_parameters())  # Current feature vs. Y
                 feat_obj.ci_length = feat_obj.confidence_bound[1] - feat_obj.confidence_bound[0]  # CI Length Risk
                 # Scoring

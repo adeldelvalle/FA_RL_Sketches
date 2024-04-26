@@ -19,7 +19,7 @@ class Synopsis:
         self.attributes_values[key] = table[key]
         self.sketch = {}
         self.min_hashed = []
-        self.n = 500
+        self.n = 1500
         self.min_keys(n=self.n)
 
     def min_keys(self, n):
@@ -110,9 +110,9 @@ class Correlation:
             # Perform bootstrap correlation calculation
             boot_low, boot_high = self.bootstrap_correlations()
 
-            return corr, (boot_low, boot_high)
+            return corr, (boot_low, boot_high), var_a
         except:
-            return 0, (0, 0)
+            return 0, (0, 0), 0
 
     def bootstrap_correlations(self, num_samples=50):
         bootstrap_corrs = []

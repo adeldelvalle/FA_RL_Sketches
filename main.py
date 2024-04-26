@@ -25,8 +25,9 @@ t_candidate.table["Cancellation Year"] = t_candidate.table["Cancellation Year"].
 target_synopsis = sketches.Synopsis(t_candidate.table, attributes=["Cancellation Year"], key='Loyalty Number')
 
 t_core.calc_corr_gain(target_synopsis)
-t_candidate.table.drop(['Cancellation Month'], axis=1, inplace=True)
+t_candidate.table.drop(['Cancellation Month', 'Cancellation Year'], axis=1, inplace=True)
 t_candidate.get_sketch()
+t_candidate.calc_corr_gain(target_synopsis)
 
 t_core.feature_scoring(5)
 print(t_core.highest_k_features)
@@ -34,12 +35,12 @@ print(t_core.score)
 print(t_candidate.highest_k_features)
 print(t_candidate.score)
 
-for feat in t_core.table:
-    if t_core.table[feat].dtype == 'object':
-        t_core.table[feat] = t_core.table[feat].astype('category')
-for feat in t_candidate.table:
-    if t_candidate.table[feat].dtype == 'object':
-        t_candidate.table[feat] = t_candidate.table[feat].astype('category')
+for feat in t_core.df_sketch:
+    if t_core.df_sketch[feat].dtype == 'object':
+        t_core.df_sketch[feat] = t_core.df_sketch[feat].astype('category')
+for feat in t_candidate.df_sketch:
+    if t_candidate.df_sketch[feat].dtype == 'object':
+        t_candidate.df_sketch[feat] = t_candidate.df_sketch[feat].astype('category')
 
 ## ---
 # t_candidate.feature_scoring(3)
@@ -54,7 +55,7 @@ for feat in t_candidate.table:
 
 model_target = 0
 max_try_num = 3
-
+t_core.df_sketch.drop(['Cancellation Year'], axis=1, inplace=True)
 print("entra")
 env = ISOFAEnvironment(t_candidate, [t_core], 'Loyalty Number', 'Cancellation Year', max_try_num)
 
