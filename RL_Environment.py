@@ -68,13 +68,13 @@ class ISOFAEnvironment:
     # -------------------- REINFORCEMENT LEARNING ENVIRONMENT METHODS  ----------------------- #
 
     def init_environment(self):
-        self.current_joined_training_set = self.t_core.table.copy()
-        self.current_training_set = self.t_core.table.copy()
+        self.current_joined_training_set = self.t_core.df_sketch.copy()
+        self.current_training_set = self.t_core.df_sketch.copy()
 
         # Init cur_state
         self.get_current_state(0)
 
-        X_train, X_test, y_train, y_test = self.split_data(self.t_core.table)
+        X_train, X_test, y_train, y_test = self.split_data(self.t_core.df_sketch)
         self.current_model = self.train_subsequent_learner(X_train, y_train)
 
         print('-' * 20 + "Init:" + '-' * 20)
@@ -105,9 +105,9 @@ class ISOFAEnvironment:
 
     def reset(self):
         # Init training set
-        self.current_joined_training_set = self.t_core.table.copy()
+        self.current_joined_training_set = self.t_core.df_sketch.copy()
 
-        self.current_training_set = self.t_core.table.copy()
+        self.current_training_set = self.t_core.df_sketch.copy()
 
         # Init the model
         X_train, X_test, y_train, y_test = self.split_data(self.current_training_set)
@@ -177,7 +177,7 @@ class ISOFAEnvironment:
 
             for i in range(len(selected_table_cols)):
                 # Variance
-                cha_vari = self.current_joined_training_set[selected_table_cols[i]].values.var()
+                cha_vari = self.t_cand[self.selected_table[-1]].feat_corr[selected_table_cols[i]].var
                 # Statistics from the sketch
                 cha_pcc = self.t_cand[self.selected_table[-1]].feat_corr[
                     selected_table_cols[i]].corr_target_variable
@@ -210,9 +210,10 @@ class ISOFAEnvironment:
 
             # Possible substitution for sketch
             self.current_joined_training_set = pd.merge(self.current_training_set,
-                                                        self.t_cand[true_action].table,
+                                                        self.t_cand[true_action].df_sketch,
                                                         how='left',
                                                         on=self.key)
+
 
             X_train, X_test, y_train, y_test = self.split_data(self.current_joined_training_set)
 
@@ -246,7 +247,7 @@ class ISOFAEnvironment:
             # selected_table_cols.remove(self.key)
 
             # Add new features
-            tmp_repo_train_table = self.t_cand[true_action[0]].table.loc[:,
+            tmp_repo_train_table = self.t_cand[true_action[0]].df_sketch.loc[:,
                                    [self.key, selected_table_cols[true_action[1]]]]
 
             self.current_training_set = pd.merge(self.current_training_set, tmp_repo_train_table, how='left',
