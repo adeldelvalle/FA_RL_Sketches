@@ -87,6 +87,7 @@ class Table:
         return mi
 
     def feature_scoring(self, k):
+        """ scores key features to be ranked """
         for feat in self.feat_corr.keys():
             feat_obj = self.feat_corr[feat]
             feat_obj.ranking = feat_obj.abs_corr * (1 - feat_obj.ci_length)
