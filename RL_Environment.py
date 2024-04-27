@@ -5,7 +5,7 @@ from xgboost import XGBClassifier
 import xgboost
 
 from sklearn.metrics import roc_auc_score
-from data_prep import Table, Feature
+from table import Table, Feature
 from sklearn.metrics import adjusted_mutual_info_score, mean_squared_error, roc_auc_score
 import math
 import pandas as pd
