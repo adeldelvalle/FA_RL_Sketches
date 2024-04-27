@@ -4,6 +4,7 @@ import sketches
 from sklearn.metrics import mutual_info_score
 from sklearn.impute import SimpleImputer
 import heapq
+import correlation
 
 pd.set_option('display.max_columns', None)  # Ensures all columns are displayed
 pd.set_option('display.max_rows', None)  # Ensures all rows are displayed
@@ -31,14 +32,13 @@ class Table:
     """
 
     def __init__(self, key, path):
-        self.table = pd.read_csv(path)
+        self.table = pd.read_csv(path, nrows=30000)
         self.table[key] = self.table[key].astype(str)
-        # cls.table = df
         self.score = 0
         self.sketch = None
         self.key = key
         self.feat_corr = {}
-        self.df_sketch: pd.DataFrame = None
+        self.df_sketch = None
         self.highest_k_features = []
 
     def get_sketch(self):
@@ -64,7 +64,7 @@ class Table:
             else:
                 feat_obj = Feature(feat)
                 feat_obj.corr_target_variable, feat_obj.confidence_bound, feat_obj.var = (
-                    sketches.Correlation(self.df_sketch[[feat, y]]).compute_parameters())  # Current feature vs. Y
+                    correlation.Correlation(self.df_sketch[[feat, y]]).compute_parameters())  # Current feature vs. Y
                 feat_obj.ci_length = feat_obj.confidence_bound[1] - feat_obj.confidence_bound[0]  # CI Length Risk
                 # Scoring
                 feat_obj.abs_corr = abs(feat_obj.corr_target_variable)  # Absolute corr for risk scoring
