@@ -57,6 +57,8 @@ class Synopsis:
             union_estimate = self.n / -self.min_hashed[0][0]  # This simulates (k-1)/U(k) from your formula
             join_size_estimate = intersection / self.n * union_estimate
             return join_size_estimate
+        
+        # return join_cost_estimation[self.key, sketch_y.key]
         return 0
 
     @staticmethod

@@ -72,6 +72,7 @@ class Table:
                 # Scoring
                 feat_obj.abs_corr = abs(feat_obj.corr_target_variable)  # Absolute corr for risk scoring
                 feat_obj.info_gain = self.calc_mutual_info(feat, y)
+                # define join cost estimating in feat_corr here
                 self.feat_corr[feat] = feat_obj
 
     def calc_mutual_info(self, feat, target):

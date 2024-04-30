@@ -200,6 +200,7 @@ class ISOFAEnvironment:
                 self.feature_charac_vector[self.selected_table[-1]][i][0] = cha_vari
                 self.feature_charac_vector[self.selected_table[-1]][i][1] = cha_pcc
                 self.feature_charac_vector[self.selected_table[-1]][i][2] = cha_mi
+                # add cost of join from feat_corr here
 
         elif update_type == 2:
             action_pos = self.selected_feature[-1]
@@ -269,6 +270,7 @@ class ISOFAEnvironment:
 
             X_train, X_test, y_train, y_test = self.split_data(self.current_training_set)
             # Train and test on new dataset
+            # add weight based on join cost estimation?
 
             self.current_model = self.train_subsequent_learner(X_train, y_train)
             test_rmse = self.test_subsequent_learner(X_test, y_test)

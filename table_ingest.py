@@ -96,6 +96,7 @@ def data_preprocessing(data_sources, y):
                 if tid1 == tid2:
                     table_edges[tid1, tid2] = 0
                 else:
+                    # TODO: use synopsys objects for join cost calculation
                     table_edges[tid1, tid2] = calc_join_cost(id_to_table[tid1], id_to_table[tid2], feature_name)
     
     # calculating best join plan
