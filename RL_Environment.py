@@ -16,21 +16,28 @@ class ISOFAEnvironment:
     Environment of the [Informed-Sketched Optimized Feature Augmentation] Reinforcement Learning Algorithm.
     """
     def __init__(self, core_table, cand_tables, key, target, max_try_num):
+        """
+        :param core_table: Main table to augment on.
+        :param cand_tables: Candidate tables to extract features from and augment main table.
+        :param key:
+        :param target: Target variable.
+        :param max_try_num:
+        """
         # environment state, reward variables
 
         self.try_num = None
-        self.prev_state = None
-        self.cur_state = None
+        self.prev_state = None      # Previous state
+        self.cur_state = None       # Current state
         self.original_score = None
         self.cur_score = None
         self.prev_score = None
         self.current_model = None
         self.past_model = None
 
-        self.table_sel_vector = []
+        self.table_sel_vector = []      # Table selector state representation vector
         self.feature_sel_vec_list = []
         self.feature_sel_vector = []
-        self.feature_charac_vector = []
+        self.feature_charac_vector = []     # Statistics from Features vector (Var, Corr, MI)
 
         self.current_training_set = None
 
@@ -68,6 +75,10 @@ class ISOFAEnvironment:
     # -------------------- REINFORCEMENT LEARNING ENVIRONMENT METHODS  ----------------------- #
 
     def init_environment(self):
+        """
+        Initialize environment of the RL Algorithm. Get the state 0 (INIT), train the first model,
+        get the first score, and create/fill necessary variables/lists.
+        """
         self.current_joined_training_set = self.t_core.df_sketch.copy()
         self.current_training_set = self.t_core.df_sketch.copy()
 
@@ -104,9 +115,12 @@ class ISOFAEnvironment:
         self.try_num = 0  # Reset attempt counter
 
     def reset(self):
+        """
+        Terminate last episode and start a new independent RL episode.
+        """
+
         # Init training set
         self.current_joined_training_set = self.t_core.df_sketch.copy()
-
         self.current_training_set = self.t_core.df_sketch.copy()
 
         # Init the model
@@ -312,6 +326,12 @@ class ISOFAEnvironment:
         return X_train, X_test, y_train, y_test
 
     def train_subsequent_learner(self, X_train, y_train):
+        """
+        Train the subsequent learner algorithm which we are trying to maximize performance.
+        :param X_train:
+        :param y_train:
+        :return:
+        """
         new_model = XGBClassifier(enable_categorical=True,
                                   use_label_encoder=False,
                                   eval_metric='auc')
@@ -319,6 +339,12 @@ class ISOFAEnvironment:
         return new_model
 
     def test_subsequent_learner(self, X_test, y_test):
+        """
+        Test the subsequent learner algorithm which we are trying to maximize performance.
+        :param X_test: Predictors test subset.
+        :param y_test: Target test subset.
+        :return:
+        """
         y_pred = self.current_model.predict(X_test)
         accuracy = np.mean(y_pred == y_test)
         print(f"Model Accuracy: {accuracy}%")
