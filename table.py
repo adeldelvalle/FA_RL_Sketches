@@ -32,7 +32,7 @@ class Table:
     """
 
     def __init__(self, key, path):
-        self.table = pd.read_csv(path, nrows=30000)
+        self.table = pd.read_csv(path)
         self.table[key] = self.table[key].astype(str)
         self.score = 0
         self.sketch = None
@@ -40,6 +40,7 @@ class Table:
         self.feat_corr = {}
         self.df_sketch = None
         self.highest_k_features = []
+        self.join_size = 0
 
     def get_sketch(self):
         self.sketch = sketches.Synopsis(self.table, list(self.table.columns), self.key)
@@ -50,7 +51,9 @@ class Table:
         :return: None, save the correlation on the feature objects.
         """
         y = y_synopsis.attributes[0]
-        sketch_y = self.sketch.join_sketch(y_synopsis, 1)  # Join Table object sketch with the target attribute sketch
+        self.join_size = self.sketch.join_sketch(y_synopsis, 1)
+        print("Join size:", self.join_size)     # Join Table object sketch with the target attribute sketch
+        sketch_y = self.sketch
         self.df_sketch = pd.DataFrame(sketch_y.sketch.values(),
                                       columns=self.sketch.attributes)  # DF of the Sketch
 

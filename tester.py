@@ -59,7 +59,7 @@ print("entra")
 env = ISOFAEnvironment(t_candidate, [t_core], 'Loyalty Number', 'Cancellation Year', max_try_num)
 
 # Parameters for the agent
-learning_rate = 0.05
+learning_rate = 0.08
 reward_decay = 0.9
 e_greedy = 1
 update_freq = 50

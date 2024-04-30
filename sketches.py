@@ -43,14 +43,21 @@ class Synopsis:
                     self.sketch[(-hash_fibonacci, hash_mmh3)] = row[self.attributes].values
 
     def join_sketch(self, sketch_y, attr):
+        intersection = 0
         for key in self.sketch.keys():
             if sketch_y.sketch.get(key) is not None:
                 self.sketch[key] = np.concatenate([self.sketch[key], sketch_y.sketch[key]])
+                intersection += 1
             else:
                 self.sketch[key] = np.concatenate([self.sketch[key], np.array([None] * attr)])
 
         self.attributes.extend(sketch_y.attributes)
-        return self
+
+        if intersection > 0:
+            union_estimate = self.n / -self.min_hashed[0][0]  # This simulates (k-1)/U(k) from your formula
+            join_size_estimate = intersection / self.n * union_estimate
+            return join_size_estimate
+        return 0
 
     @staticmethod
     def f_hash(key):
