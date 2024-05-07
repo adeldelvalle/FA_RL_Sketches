@@ -25,12 +25,12 @@ target = "o3_AQI"
 
 # define core table
 print("Sketching Core Table...")
-core_path = gcdata+"temp.csv"
+core_path = gcdata+"o3_daily_summary.csv"
 t_core = Table(joinable, core_path)
 t_core.get_sketch()
 
 # define candidate tables
-candidate_paths = [file for file in os.listdir(gcdata) if "temp" not in file]
+candidate_paths = [file for file in os.listdir(gcdata) if "o3_daily" not in file]
 t_candidates = []
 print("Training Candidates:")
 for path in tqdm(candidate_paths):
@@ -38,18 +38,17 @@ for path in tqdm(candidate_paths):
     # get rid of target variable in candidate table
     if target in t_cand.table.columns:
         t_cand.table.drop([target], axis=1, inplace=True)
-    else:
-        print("Potential Error;", target, "as target variable not found in", path)
+    assert joinable in t_cand.table.columns, f"{joinable=} not found in {path}"
     # rename columns for less confusion on join
-    renamer = dict([[col, path+'-'+col] for col in t_cand.table.columns])
+    renamer = dict([[col, path+'-'+col] for col in t_cand.table.columns if joinable not in col])
     t_cand.table = t_cand.table.rename(columns=renamer)
     
     # use synopsys for join estimation
-    cand_synopsis = sketches.Synopsis(t_cand.table, attributes=[target], key=joinable)
+    cand_synopsis = sketches.Synopsis(t_cand.table, attributes=list(renamer.values()), key=joinable)
     t_core.calc_corr_gain(cand_synopsis)  # calculate correlation between candidate and core
     t_cand.get_sketch()  # ? sketch candidate table again
     t_cand.calc_corr_gain(cand_synopsis)  # ? calculate correlation between candidate and itself
-    # get feature-wise sketch
+    # ? get feature-wise sketch
     for feat in t_core.df_sketch:
         if t_core.df_sketch[feat].dtype == 'object':
             t_core.df_sketch[feat] = t_core.df_sketch[feat].astype('category')
@@ -63,7 +62,7 @@ for path in tqdm(candidate_paths):
 model_target = 0
 max_try_num = 3
 t_core.df_sketch.drop([target], axis=1, inplace=True)
-print("Defining Environment")
+print("\nDefining Environment")
 env = ISOFAEnvironment(t_core, t_candidates, joinable, target, max_try_num)
 
 # Parameters for the agent
@@ -77,7 +76,7 @@ print("Starting Training...")
 autodata = Autofeature_agent(env, BDQN_batch_size, learning_rate, reward_decay, e_greedy, update_freq, mem_cap,
                                 BDQN_batch_size)
 
-print("Agent Ready!")
+print("\nAgent Ready!")
 
 # Train the workload
 autodata.train_workload()
