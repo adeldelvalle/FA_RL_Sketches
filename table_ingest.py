@@ -51,6 +51,7 @@ def data_preprocessing(data_sources, target_attr):
     
     # calculating best join plan
     optimized_path, optimized_path_cost =  shortest_path(table_edges, num_tables)
+    # TODO: retrace path
     
     # get optimized path from every table to the table with the target feature
     
@@ -86,7 +87,12 @@ def shortest_path(graph, n):
     """
     d_graph = np.full((n,n,n), np.inf)
     d_graph[0] = graph
-    path = np.full((n,n,n), np.inf)
+    path = np.full((n,n,n), np.nan)
+    for i in range(n):  # initializing path
+        for j in range(n):
+            if d_graph[0,i,j] != np.nan:
+                path[0,i,j] = i
+    
     for k in range(n):
         for i in range(n):
             for j in range(n):
@@ -97,7 +103,7 @@ def shortest_path(graph, n):
                     path[k, i, j] = path[k-1, i, j]
                 else:
                     d_graph[k, i, j] = new_dist
-                    path[k, i, j] = [path[k-1, i, k], k, path[k-1, k, j]]
+                    path[k, i, j] = path[k-1, k, j]
     # processing step for pathing
     final_path = np.full((n,n), np.inf)
     for i in range(n):
