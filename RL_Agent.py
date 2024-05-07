@@ -73,6 +73,7 @@ class Autofeature_agent(object):
 
         self.learning_step_counter = 0
         self.update_freq = update_freq
+        # self.join_cost = {}  # TODO: figure out how to reference the .env of multiple tables
 
         self.mem_counter = 0
         self.memory_capacity = mem_cap
@@ -162,7 +163,7 @@ class Autofeature_agent(object):
         self.mem[index, :] = trans
         self.mem_counter += 1
 
-    def learn(self):
+    def learn(self):  # TODO: add regulizar based on self.join_cost?
         sample_index = np.random.choice(min(self.mem_counter, self.memory_capacity), self.batch_size)
         b_memory = self.mem[sample_index, :]
         state_len = self.env.get_state_len()

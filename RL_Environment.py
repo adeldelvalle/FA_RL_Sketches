@@ -39,6 +39,7 @@ class ISOFAEnvironment:
 
         self.t_cand: list[Table] = cand_tables
         self.t_core: Table = core_table
+        # self.t_table_cost = dict([[t, 0] for t in cand_tables])
         self.target = target
         self.key = key
 
@@ -73,7 +74,8 @@ class ISOFAEnvironment:
 
         # Init cur_state
         self.get_current_state(0)
-
+        
+        # TODO: add table cost in environment set?
         X_train, X_test, y_train, y_test = self.split_data(self.t_core.df_sketch)
         self.current_model = self.train_subsequent_learner(X_train, y_train)
 

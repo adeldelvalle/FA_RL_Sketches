@@ -42,7 +42,7 @@ class Synopsis:
                     heapq.heapreplace(self.min_hashed, (-hash_fibonacci, hash_mmh3))
                     self.sketch[(-hash_fibonacci, hash_mmh3)] = row[self.attributes].values
 
-    def join_sketch(self, sketch_y, attr):
+    def join_sketch(self, sketch_y, attr):  # TODO: add to table_ingest for cost-prediction
         for key in self.sketch.keys():
             if sketch_y.sketch.get(key) is not None:
                 self.sketch[key] = np.concatenate([self.sketch[key], sketch_y.sketch[key]])
