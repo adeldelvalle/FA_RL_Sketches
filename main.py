@@ -28,6 +28,8 @@ print("Sketching Core Table...")
 core_path = gcdata+"o3_daily_summary.csv"
 t_core = Table(joinable, core_path)
 t_core.get_sketch()
+core_syn = sketches.Synopsis(t_core.table, attributes=[target], key=joinable) 
+t_core.calc_corr_gain(core_syn)
 
 # define candidate tables
 candidate_paths = [file for file in os.listdir(gcdata) if "o3_daily" not in file]
@@ -44,10 +46,10 @@ for path in tqdm(candidate_paths):
     t_cand.table = t_cand.table.rename(columns=renamer)
     
     # use synopsys for join estimation
-    cand_synopsis = sketches.Synopsis(t_cand.table, attributes=list(renamer.values()), key=joinable)
-    t_core.calc_corr_gain(cand_synopsis)  # calculate correlation between candidate and core
+    # cand_synopsis = sketches.Synopsis(t_cand.table, attributes=target, key=joinable)  # list(renamer.values())
+    # t_core.calc_corr_gain(cand_synopsis)  # calculate correlation between candidate and core
     t_cand.get_sketch()  # ? sketch candidate table again
-    t_cand.calc_corr_gain(cand_synopsis)  # ? calculate correlation between candidate and itself
+    t_cand.calc_corr_gain(core_syn)  # ? calculate correlation between candidate and itself
     # ? get feature-wise sketch
     for feat in t_core.df_sketch:
         if t_core.df_sketch[feat].dtype == 'object':
@@ -56,13 +58,14 @@ for path in tqdm(candidate_paths):
         if t_cand.df_sketch[feat].dtype == 'object':
             t_cand.df_sketch[feat] = t_cand.df_sketch[feat].astype('category')
     t_candidates.append(t_cand)
+    print('\n')
 
 
 # instantiate model environment
 model_target = 0
 max_try_num = 3
 t_core.df_sketch.drop([target], axis=1, inplace=True)
-print("\nDefining Environment")
+print("\n\nDefining Environment")
 env = ISOFAEnvironment(t_core, t_candidates, joinable, target, max_try_num)
 
 # Parameters for the agent

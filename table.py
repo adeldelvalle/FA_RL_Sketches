@@ -44,7 +44,7 @@ class Table:
     def get_sketch(self):
         self.sketch = sketches.Synopsis(self.table, list(self.table.columns), self.key)
 
-    def calc_corr_gain(self, y_synopsis):
+    def calc_corr_gain(self, y_synopsis, ignorena=False):
         """
         :param y_synopsis: Synopsys object of the target variable.
         :return: None, save the correlation on the feature objects.
@@ -54,7 +54,7 @@ class Table:
         self.df_sketch = pd.DataFrame(sketch_y.sketch.values(),
                                       columns=self.sketch.attributes)  # DF of the Sketch
 
-        if self.df_sketch[y].isna().any():  # TEMP STRATEGY FOR NAN VALUES
+        if ignorena and self.df_sketch[y].isna().any():  # TEMP STRATEGY FOR NAN VALUES
             target_imputer = SimpleImputer(strategy='most_frequent')
             self.df_sketch[y] = target_imputer.fit_transform(self.df_sketch[y].values.reshape(-1, 1)).ravel()
 
