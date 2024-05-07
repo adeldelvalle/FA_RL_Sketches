@@ -104,11 +104,6 @@ def shortest_path(graph, n):
                 else:
                     d_graph[k, i, j] = new_dist
                     path[k, i, j] = path[k-1, k, j]
-    # processing step for pathing
-    final_path = np.full((n,n), np.inf)
-    for i in range(n):
-        for j in range(n):
-            final_path[i, j] = path[-1, i, j].flatten()
     return d_graph[-1], path[-1]
 # def relax(u, v, nodes, edge_weights):
 #     if nodes[u][0] > (nodes[v][0] + edge_weights[u][v]):
