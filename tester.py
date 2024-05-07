@@ -10,7 +10,7 @@ import sketches
 """ TEST CASE FILE FOR TESTING (DUH) """
 
 
-paths = ["data/Customer Flight Activity.csv", "data/Customer Loyalty History.csv"]
+paths = ["data/Customer Flight Activity.csv", 'data/Customer Loyalty CatEncoded.csv']  #"data/Customer Loyalty History.csv"]
 # temp#####
 
 t_core = Table('Loyalty Number', paths[0])
