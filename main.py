@@ -27,15 +27,19 @@ target = "o3_AQI"
 print("Sketching Core Table...")
 core_path = gcdata+"o3_daily_summary.csv"
 t_core = Table(joinable, core_path)
+
+y_feat = t_core.table[[joinable, target]]
+t_core.table.drop([target], axis=1, inplace=True)
+
 t_core.get_sketch()
-core_syn = sketches.Synopsis(t_core.table, attributes=[target], key=joinable) 
+core_syn = sketches.Synopsis(y_feat, attributes=[target], key=joinable) 
 t_core.calc_corr_gain(core_syn)
 
 # define candidate tables
 candidate_paths = [file for file in os.listdir(gcdata) if "o3_daily" not in file]
 t_candidates = []
-print("Training Candidates:")
 for path in tqdm(candidate_paths):
+    print("\n\nLooking at table", path)
     t_cand = Table(joinable, gcdata+path)
     # get rid of target variable in candidate table
     if target in t_cand.table.columns:
@@ -46,9 +50,8 @@ for path in tqdm(candidate_paths):
     t_cand.table = t_cand.table.rename(columns=renamer)
     
     # use synopsys for join estimation
-    # cand_synopsis = sketches.Synopsis(t_cand.table, attributes=target, key=joinable)  # list(renamer.values())
-    # t_core.calc_corr_gain(cand_synopsis)  # calculate correlation between candidate and core
     t_cand.get_sketch()  # ? sketch candidate table again
+    # TODO: check missing values in join of core with voc_daily_summary.csv (nan vals in calc mutual info)
     t_cand.calc_corr_gain(core_syn)  # ? calculate correlation between candidate and itself
     # ? get feature-wise sketch
     for feat in t_core.df_sketch:

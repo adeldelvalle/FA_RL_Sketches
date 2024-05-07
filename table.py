@@ -72,6 +72,7 @@ class Table:
                 self.feat_corr[feat] = feat_obj
 
     def calc_mutual_info(self, feat, target):
+        print("Target:\n", self.df_sketch[target].isna().sum())
         if self.table[feat].dtype in ['int64', 'float64']:
             # Discretize the column
             discretized = pd.cut(self.df_sketch[feat], bins=10, labels=False, duplicates='drop')
