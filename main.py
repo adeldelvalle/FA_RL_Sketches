@@ -30,6 +30,7 @@ t_core = Table(joinable, core_path)
 
 y_feat = t_core.table[[joinable, target]]
 t_core.table.drop([target], axis=1, inplace=True)
+print(t_core.table.shape)
 
 t_core.get_sketch()
 core_syn = sketches.Synopsis(y_feat, attributes=[target], key=joinable) 
@@ -54,6 +55,7 @@ for path in tqdm(candidate_paths):
     # TODO: check missing values in join of core with voc_daily_summary.csv (nan vals in calc mutual info)
     t_cand.calc_corr_gain(core_syn)  # ? calculate correlation between candidate and itself
     # ? get feature-wise sketch
+    t_cand.feature_scoring(20)
     for feat in t_core.df_sketch:
         if t_core.df_sketch[feat].dtype == 'object':
             t_core.df_sketch[feat] = t_core.df_sketch[feat].astype('category')
@@ -66,7 +68,7 @@ for path in tqdm(candidate_paths):
 
 # instantiate model environment
 model_target = 0
-max_try_num = 3
+max_try_num = 7
 # t_core.df_sketch.drop([target], axis=1, inplace=True)
 print("\n\nDefining Environment")
 env = ISOFAEnvironment(t_core, t_candidates, joinable, target, max_try_num)
@@ -77,7 +79,7 @@ reward_decay = 0.9
 e_greedy = 1
 update_freq = 50
 mem_cap = 1000
-BDQN_batch_size = 3
+BDQN_batch_size = 6
 print("Starting Training...")
 autodata = Autofeature_agent(env, BDQN_batch_size, learning_rate, reward_decay, e_greedy, update_freq, mem_cap,
                                 BDQN_batch_size)

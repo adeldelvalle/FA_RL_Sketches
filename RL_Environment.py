@@ -1,12 +1,13 @@
 from sklearn import svm
 from sklearn.model_selection import train_test_split
 import numpy as np
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, XGBRegressor
 import xgboost
 
 from sklearn.metrics import roc_auc_score
 from table import Table, Feature
-from sklearn.metrics import adjusted_mutual_info_score, mean_squared_error, roc_auc_score
+from sklearn.metrics import adjusted_mutual_info_score, mean_squared_error, roc_auc_score, r2_score
+
 import math
 import pandas as pd
 
@@ -15,6 +16,7 @@ class ISOFAEnvironment:
     """
     Environment of the [Informed-Sketched Optimized Feature Augmentation] Reinforcement Learning Algorithm.
     """
+
     def __init__(self, core_table, cand_tables, key, target, max_try_num):
         # environment state, reward variables
 
@@ -74,7 +76,7 @@ class ISOFAEnvironment:
 
         # Init cur_state
         self.get_current_state(0)
-        
+
         # TODO: add table cost in environment set?
         X_train, X_test, y_train, y_test = self.split_data(self.t_core.df_sketch)
         self.current_model = self.train_subsequent_learner(X_train, y_train)
@@ -209,13 +211,15 @@ class ISOFAEnvironment:
 
         if action[0] == 't':
             true_action = self.action_table[action[1]]
+            if self.target in self.t_cand[true_action].df_sketch.columns:
+                self.t_cand[true_action].df_sketch.drop([self.target], axis=1, inplace=True)
+
 
             # Possible substitution for sketch
             self.current_joined_training_set = pd.merge(self.current_training_set,
                                                         self.t_cand[true_action].df_sketch,
                                                         how='left',
                                                         on=self.key)
-
 
             X_train, X_test, y_train, y_test = self.split_data(self.current_joined_training_set)
 
@@ -238,10 +242,10 @@ class ISOFAEnvironment:
             if self.try_num > self.max_try_num:
                 print("Try too much times!!!")
                 done = True
-                return self.cur_state, self.cur_score - self.prev_score, done
+                return self.cur_state, self.prev_score - self.cur_score, done
             else:
                 done = False
-                return self.cur_state, self.cur_score - self.prev_score, done
+                return self.cur_state, self.prev_score - self.cur_score, done
 
         elif action[0] == 'f':
             true_action = self.action_feature[action[1]]
@@ -275,10 +279,10 @@ class ISOFAEnvironment:
             if self.try_num > self.max_try_num:
                 print("Try too much times!!!")
                 done = True
-                return self.cur_state, self.cur_score - self.prev_score, done
+                return self.cur_state, self.prev_score - self.cur_score, done
             else:
                 done = False
-                return self.cur_state, self.cur_score - self.prev_score, done
+                return self.cur_state,  self.prev_score - self.cur_score, done
 
     # -------------------- REINFORCEMENT LEARNING ACTION SPACE  ----------------------- #
 
@@ -314,17 +318,17 @@ class ISOFAEnvironment:
         return X_train, X_test, y_train, y_test
 
     def train_subsequent_learner(self, X_train, y_train):
-        new_model = XGBClassifier(enable_categorical=True,
-                                  use_label_encoder=False,
-                                  eval_metric='auc')
+        new_model = XGBRegressor(enable_categorical=True,
+                                 use_label_encoder=False,
+                                 eval_metric='auc')
         new_model.fit(X_train, y_train)
         return new_model
 
     def test_subsequent_learner(self, X_test, y_test):
         y_pred = self.current_model.predict(X_test)
-        accuracy = np.mean(y_pred == y_test)
-        print(f"Model Accuracy: {accuracy}%")
-        rmse_score = roc_auc_score(y_test, y_pred)
+        accuracy = r2_score(y_test, y_pred)
+        print(f"Model R2 score: {accuracy}%")
+        rmse_score = mean_squared_error(y_test, y_pred)
         return rmse_score
 
     def check_corr(self, table, feature):

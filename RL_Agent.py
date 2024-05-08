@@ -205,7 +205,7 @@ class Autofeature_agent(object):
             print("paso")
             file.write(f'0, {test_mse}\n')
 
-            episode_num = 40
+            episode_num = 45
             cut_off = 30
             const_a = math.pow(0.001, 1 / episode_num)
 
@@ -237,7 +237,7 @@ class Autofeature_agent(object):
                         print(f"Features included：{self.env.get_current_features()}")
 
                         print("The RMSE of current model：" + str(self.env.cur_score))
-                        print("Benefit：" + str(max(0, self.env.cur_score - self.env.original_score)))
+                        print("Benefit：" + str(max(0,  self.env.original_score - self.env.cur_score)))
                         print("Time：" + str(time_end - time_start))
 
                         break
