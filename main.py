@@ -22,6 +22,7 @@ results.py & playground.ipynb → analysis & visuals
 gcdata = "data/gc-data/"  # data directory
 joinable = "DayLoc"  # feature that is joinable between tables
 target = "Temperature"
+# TODO: drop Date and Location on on the csv's
 
 # define core table
 print("Sketching Core Table...")
