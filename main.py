@@ -20,12 +20,12 @@ results.py & playground.ipynb → analysis & visuals
 
 
 gcdata = "data/gc-data/"  # data directory
-joinable = "Day"  # feature that is joinable between tables
-target = "o3_AQI"
+joinable = "DayLoc"  # feature that is joinable between tables
+target = "Temperature"
 
 # define core table
 print("Sketching Core Table...")
-core_path = gcdata+"o3_daily_summary.csv"
+core_path = gcdata+"temp.csv"
 t_core = Table(joinable, core_path)
 
 y_feat = t_core.table[[joinable, target]]
@@ -37,7 +37,7 @@ core_syn = sketches.Synopsis(y_feat, attributes=[target], key=joinable)
 t_core.calc_corr_gain(core_syn)
 
 # define candidate tables
-candidate_paths = [file for file in os.listdir(gcdata) if "o3_daily" not in file]
+candidate_paths = [file for file in os.listdir(gcdata) if "temp" not in file]
 t_candidates = []
 for path in tqdm(candidate_paths):
     print("\n\nLooking at table", path)
