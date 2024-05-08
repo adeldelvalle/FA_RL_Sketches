@@ -67,7 +67,7 @@ for path in tqdm(candidate_paths):
 # instantiate model environment
 model_target = 0
 max_try_num = 3
-t_core.df_sketch.drop([target], axis=1, inplace=True)
+# t_core.df_sketch.drop([target], axis=1, inplace=True)
 print("\n\nDefining Environment")
 env = ISOFAEnvironment(t_core, t_candidates, joinable, target, max_try_num)
 
