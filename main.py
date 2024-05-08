@@ -79,7 +79,7 @@ reward_decay = 0.9
 e_greedy = 1
 update_freq = 50
 mem_cap = 1000
-BDQN_batch_size = 6
+BDQN_batch_size = 3
 print("Starting Training...")
 autodata = Autofeature_agent(env, BDQN_batch_size, learning_rate, reward_decay, e_greedy, update_freq, mem_cap,
                                 BDQN_batch_size)

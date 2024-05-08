@@ -19,7 +19,7 @@ class Synopsis:
         self.attributes_values[key] = table[key]
         self.sketch = {}
         self.min_hashed = []
-        self.n = 4000
+        self.n = 6000
         self.min_keys(n=self.n)
 
     def min_keys(self, n):

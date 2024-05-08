@@ -320,7 +320,7 @@ class ISOFAEnvironment:
     def train_subsequent_learner(self, X_train, y_train):
         new_model = XGBRegressor(enable_categorical=True,
                                  use_label_encoder=False,
-                                 eval_metric='auc')
+                                 eval_metric='rmse')
         new_model.fit(X_train, y_train)
         return new_model
 

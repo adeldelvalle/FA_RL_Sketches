@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
 import sketches
-from sklearn.metrics import mutual_info_score
+from sklearn.metrics import mutual_info_score, adjusted_mutual_info_score
 from sklearn.impute import SimpleImputer
 import heapq
 import correlation
+
 
 pd.set_option('display.max_columns', None)  # Ensures all columns are displayed
 pd.set_option('display.max_rows', None)  # Ensures all rows are displayed
@@ -74,9 +75,7 @@ class Table:
     def calc_mutual_info(self, feat, target):
         if self.table[feat].dtype in ['int64', 'float64']:
             # Discretize the column
-            discretized = pd.cut(self.df_sketch[feat], bins=10, labels=False, duplicates='drop')
-            discretized = discretized.fillna(-1)  # TEMP STRATEGY FOR NAN VALUES
-            mi = mutual_info_score(discretized, self.df_sketch[target])
+            mi = adjusted_mutual_info_score(self.df_sketch[feat].fillna(-1).values, self.df_sketch[target])
         else:
             filled_series = self.table[feat].fillna('Missing')  # TEMP STRATEGY FOR NAN VALUES
             # print(self.df_sketch[feat], self.df_sketch[target])
