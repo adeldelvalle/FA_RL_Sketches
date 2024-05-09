@@ -48,7 +48,7 @@ for path in tqdm(candidate_paths):
         t_cand.table.drop([target], axis=1, inplace=True)
     #assert joinable in t_cand.table.columns, f"{joinable=} not found in {path}"
     # rename columns for less confusion on join
-    renamer = dict([[col, path+'-'+col] for col in t_cand.table.columns if col not in joinable])
+    renamer = dict([[col, path+'-'+col] if col not in joinable else [col, col] for col in t_cand.table.columns])
     t_cand.table = t_cand.table.rename(columns=renamer)
 
     # use synopsys for join estimation
