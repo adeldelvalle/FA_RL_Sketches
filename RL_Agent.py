@@ -3,6 +3,7 @@ import random
 import math
 import time
 import csv
+import pandas as pd
 import numpy as np
 import torch
 import torch.optim
@@ -260,7 +261,9 @@ class Autofeature_agent(object):
 
             file.write(str([episode, self.epsilon, self.env.get_current_features(), self.env.cur_score,
                             max(0, self.env.cur_score - self.env.prev_score), time_end - time_start]))
-        return results
+        df = pd.DataFrame(results, columns=["rmse", "benefit", "time", "epsilon", "feats"])
+        df.to_csv("results.csv")
+        return df
 
     def state_representation(self, state):
         """
