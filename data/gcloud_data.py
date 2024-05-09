@@ -28,26 +28,23 @@ def run_query(query_string):
     return dataframe
 
 def query_daily(tables):
-    limit = 50000
+    # limit = 50000
+    QUERYtemp = f"""
+        SELECT
+           T.date_local AS Day, AVG(T.arithmetic_mean) AS Temperature, AVG(first_max_value), AVG(first_max_hour), AVG(observation_count), AVG(observation_percent), ANY_VALUE(state_name), ANY_VALUE(county_name), ANY_VALUE(city_name)
+        FROM
+          `bigquery-public-data.epa_historical_air_quality.temperature_daily_summary` as T
 
-    # QUERYtemp = f"""
-    #     SELECT
-    #        T.date_local AS Day, AVG(T.arithmetic_mean) AS Temperature, AVG(first_max_value), AVG(first_max_hour), AVG(observation_count), AVG(observation_percent), ANY_VALUE(state_name), ANY_VALUE(county_name), ANY_VALUE(city_name)
-    #     FROM
-    #       `bigquery-public-data.epa_historical_air_quality.temperature_daily_summary` as T
+        GROUP BY Day
+        ORDER BY Day
+    """
+    # client = bigquery.Client.from_service_account_json('key.json')
+    df_temp = client.query(QUERYtemp).to_dataframe().set_index('Day')
+    print("Temp query attained...")
 
-    #     GROUP BY Day
-    #     ORDER BY Day
-
-    #     LIMIT {limit}
-    # """
-    # # client = bigquery.Client.from_service_account_json('key.json')
-    # df_temp = client.query(QUERYtemp).to_dataframe().set_index('Day')
-    # print("Temp query attained...")
-
-    # df_temp.index.name = 'Day'
-    # df_temp.to_csv(f"{save_dir}/temp.csv")
-    # print("Temp query saved")
+    df_temp.index.name = 'Day'
+    df_temp.to_csv(f"{save_dir}/temp.csv")
+    print("Temp query saved")
 
     for table_name in tqdm(tables):
         print(table_name, "query starting")
@@ -60,8 +57,6 @@ def query_daily(tables):
 
             GROUP BY Day
             ORDER BY Day
-
-            LIMIT {limit}
         """
 
         # client = bigquery.Client.from_service_account_json('key.json')
@@ -72,10 +67,8 @@ def query_daily(tables):
         df_temp.to_csv(f"{save_dir}/{table_name}.csv")
 
 
-sus_tables = ['codaily', 'pm25daily', 'no2daily', 'o3daily', 'temp']
-converted_sus_tables = ['no2_daily_summary']
 semi_sus_tables = ['o3_daily_summary', 'pm10_daily_summary', 'pm25_frm_daily_summary', 'pressure_daily_summary', 
-                   'rh_and_dp_daily_summary', 'so2_daily_summary', 'voc_daily_summary', 'wind_daily_summary']
+                    'rh_and_dp_daily_summary', 'so2_daily_summary', 'voc_daily_summary', 'wind_daily_summary', 'no2_daily_summary']
 cited_tables = ['pm25_nonfrm_dail_summary', 'wind_daily_summary', 'temperature_daily_summary']
 
-query_daily(converted_sus_tables)
+query_daily(semi_sus_tables)
