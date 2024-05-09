@@ -197,6 +197,7 @@ class Autofeature_agent(object):
         self.learning_step_counter += 1
 
     def train_workload(self):
+        results = []
         with open('information_rl.csv', 'w') as file:
             file.write('iteration, accuracy\n')
             X_train, X_test, Y_train, Y_test = self.env.get_training_dataset()
@@ -239,6 +240,10 @@ class Autofeature_agent(object):
                         print("The RMSE of current model：" + str(self.env.cur_score))
                         print("Benefit：" + str(max(0,  self.env.original_score - self.env.cur_score)))
                         print("Time：" + str(time_end - time_start))
+                        
+                        # store results [rmse, benefit, time, epsilon, feats]
+                        results.append([str(self.env.cur_score), str(max(0,  self.env.original_score - self.env.cur_score)),
+                                        str(time_end - time_start), str(self.epsilon), self.env.get_current_features()])
 
                         break
 
@@ -255,6 +260,7 @@ class Autofeature_agent(object):
 
             file.write(str([episode, self.epsilon, self.env.get_current_features(), self.env.cur_score,
                             max(0, self.env.cur_score - self.env.prev_score), time_end - time_start]))
+        return results
 
     def state_representation(self, state):
         """
