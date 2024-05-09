@@ -326,7 +326,7 @@ class ISOFAEnvironment:
 
     def test_subsequent_learner(self, X_test, y_test):
         y_pred = self.current_model.predict(X_test)
-        accuracy = r2_score(y_test, y_pred)
+        accuracy = r2_score(y_test, y_pred)*100
         print(f"Model R2 score: {accuracy}%")
         rmse_score = mean_squared_error(y_test, y_pred)
         return rmse_score
