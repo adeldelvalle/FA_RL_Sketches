@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import copy
+import matplotlib.pyplot as plt
 
 
 class Net(nn.Module):
@@ -64,6 +65,7 @@ class Autofeature_agent(object):
 
     def __init__(self, env, bdqn_csv, learning_rate=0.05, reward_decay=0.9, e_greedy=1, update_freq=50, mem_cap=100000,
                  BDQN_batch_size=32):
+        self.losses = []
         self.env = env
         self.res_csv = bdqn_csv
         self.lr = learning_rate
@@ -190,6 +192,7 @@ class Autofeature_agent(object):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        self.losses.append(loss.item())
 
         if self.learning_step_counter % self.update_freq == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
@@ -274,3 +277,39 @@ class Autofeature_agent(object):
         state_vector = torch.concat([table_vector, feature_vector, charac_vector], 0)
 
         return state_vector
+
+    import matplotlib.pyplot as plt
+
+    def plot_losses(self):
+        plt.figure(figsize=(12, 6))
+
+        # Set a style
+        plt.style.use('grayscale')
+
+        # Configure plot to use a scientific theme
+        plt.rc('font', family='serif')
+        plt.rc('text', usetex=True)
+        plt.rc('axes', labelsize=12)
+        plt.rc('xtick', labelsize=10)
+        plt.rc('ytick', labelsize=10)
+        plt.rc('legend', fontsize=10)
+
+        # Plot gradient losses
+        plt.subplot(1, 2, 1)
+        plt.plot(self.losses, label='Gradient Losses', color='black')  # black for visibility
+        plt.title('Gradient Losses over Training')
+        plt.xlabel('Training Iteration')
+        plt.ylabel('Loss')
+        plt.legend()
+
+        # Plot subsequent model AUC
+        plt.subplot(1, 2, 2)
+        plt.plot(self.env.subsequent_losses[1:], label='Subsequent Model AUC', color='gray')  # gray for style
+        plt.title('Subsequent Model AUC over Episodes')
+        plt.xlabel('Episode')
+        plt.ylabel('AUC')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()
+

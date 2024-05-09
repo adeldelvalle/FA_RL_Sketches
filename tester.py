@@ -74,6 +74,8 @@ print("Agent Ready!")
 # Train the workload
 autodata.train_workload()
 
+autodata.plot_losses()
+
 # temp#####
 # t_can = []
 # t_main = None

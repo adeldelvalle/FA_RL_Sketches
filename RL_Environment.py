@@ -25,6 +25,7 @@ class ISOFAEnvironment:
         """
         # environment state, reward variables
 
+        self.subsequent_losses = []
         self.try_num = None
         self.prev_state = None      # Previous state
         self.cur_state = None       # Current state
@@ -351,6 +352,7 @@ class ISOFAEnvironment:
         accuracy = np.mean(y_pred == y_test)
         print(f"Model Accuracy: {accuracy}%")
         rmse_score = roc_auc_score(y_test, y_pred)
+        self.subsequent_losses.append(rmse_score)
         return rmse_score
 
     def check_corr(self, table, feature):
