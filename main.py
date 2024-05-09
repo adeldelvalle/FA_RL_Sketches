@@ -20,7 +20,7 @@ results.py & playground.ipynb → analysis & visuals
 
 
 gcdata = "data/gc-data/"  # data directory
-joinable = "Day"  # feature that is joinable between tables
+joinable = ["Day", "f4_"]  # feature that is joinable between tables
 target = "o3_AQI"
 
 # define core table
@@ -28,12 +28,13 @@ print("Sketching Core Table...")
 core_path = gcdata+"o3_daily_summary.csv"
 t_core = Table(joinable, core_path)
 
-y_feat = t_core.table[[joinable, target]]
+y_feat = t_core.table[joinable + [target]]
 t_core.table.drop([target], axis=1, inplace=True)
 print(t_core.table.shape)
 
 t_core.get_sketch()
-core_syn = sketches.Synopsis(y_feat, attributes=[target], key=joinable) 
+core_syn = sketches.Synopsis(y_feat, attributes=[target], key=joinable)
+print(core_syn.table.head())
 t_core.calc_corr_gain(core_syn)
 
 # define candidate tables
@@ -45,24 +46,30 @@ for path in tqdm(candidate_paths):
     # get rid of target variable in candidate table
     if target in t_cand.table.columns:
         t_cand.table.drop([target], axis=1, inplace=True)
-    assert joinable in t_cand.table.columns, f"{joinable=} not found in {path}"
+    #assert joinable in t_cand.table.columns, f"{joinable=} not found in {path}"
     # rename columns for less confusion on join
-    renamer = dict([[col, path+'-'+col] for col in t_cand.table.columns if joinable not in col])
+    renamer = dict([[col, path+'-'+col] for col in t_cand.table.columns if col not in joinable])
     t_cand.table = t_cand.table.rename(columns=renamer)
-    
+
     # use synopsys for join estimation
     t_cand.get_sketch()  # ? sketch candidate table again
     # TODO: check missing values in join of core with voc_daily_summary.csv (nan vals in calc mutual info)
-    t_cand.calc_corr_gain(core_syn)  # ? calculate correlation between candidate and itself
+
     # ? get feature-wise sketch
-    t_cand.feature_scoring(20)
-    for feat in t_core.df_sketch:
-        if t_core.df_sketch[feat].dtype == 'object':
-            t_core.df_sketch[feat] = t_core.df_sketch[feat].astype('category')
-    for feat in t_cand.df_sketch:
-        if t_cand.df_sketch[feat].dtype == 'object':
-            t_cand.df_sketch[feat] = t_cand.df_sketch[feat].astype('category')
-    t_candidates.append(t_cand)
+    if t_cand.calc_corr_gain(core_syn):  # ? calculate correlation between candidate and itself
+        t_cand.df_sketch = t_cand.df_sketch.rename(columns=renamer)
+
+        t_candidates.append(t_cand)
+        t_cand.feature_scoring(20)
+
+
+        for feat in t_core.df_sketch:
+            if t_core.df_sketch[feat].dtype == 'object':
+                t_core.df_sketch[feat] = t_core.df_sketch[feat].astype('category')
+        for feat in t_cand.df_sketch:
+            if t_cand.df_sketch[feat].dtype == 'object':
+                t_cand.df_sketch[feat] = t_cand.df_sketch[feat].astype('category')
+
     print('\n')
 
 

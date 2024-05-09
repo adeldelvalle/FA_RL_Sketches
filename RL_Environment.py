@@ -216,6 +216,8 @@ class ISOFAEnvironment:
 
 
             # Possible substitution for sketch
+            print(self.current_training_set.head(5))
+            print(self.t_cand[true_action].df_sketch.head(5))
             self.current_joined_training_set = pd.merge(self.current_training_set,
                                                         self.t_cand[true_action].df_sketch,
                                                         how='left',
@@ -248,13 +250,21 @@ class ISOFAEnvironment:
                 return self.cur_state, self.prev_score - self.cur_score, done
 
         elif action[0] == 'f':
+
             true_action = self.action_feature[action[1]]
             selected_table_cols = list(x[1] for x in self.t_cand[true_action[0]].highest_k_features)
             # selected_table_cols.remove(self.key)
+            if selected_table_cols[true_action[1]] in self.key:
+                done = False
+                return self.cur_state, 0, done
+
 
             # Add new features
             tmp_repo_train_table = self.t_cand[true_action[0]].df_sketch.loc[:,
-                                   [self.key, selected_table_cols[true_action[1]]]]
+                                   self.key + [selected_table_cols[true_action[1]]]]
+            print(tmp_repo_train_table.head(5))
+            print(self.current_training_set.head(5))
+
 
             self.current_training_set = pd.merge(self.current_training_set, tmp_repo_train_table, how='left',
                                                  on=self.key)
@@ -289,7 +299,7 @@ class ISOFAEnvironment:
     def generate_valid_feature_action(self):
         # Iterate through selected tables
         for repo_table_id in self.selected_table:
-            tmp_repo_table_cols = list(x[1] for x in self.t_cand[repo_table_id].highest_k_features)
+            tmp_repo_table_cols = list(x[1] for x in self.t_cand[repo_table_id].highest_k_features if x not in self.key)
             # tmp_repo_table_cols.remove(self.key)
             # Iterate through features in the current table
             for j in range(len(tmp_repo_table_cols)):
@@ -299,7 +309,7 @@ class ISOFAEnvironment:
                 self.action_feature_valid.append(action)
 
     def add_valid_feature_action(self, new_table_id):
-        tmp_repo_table_cols = list(x[1] for x in self.t_cand[new_table_id].highest_k_features)
+        tmp_repo_table_cols = list(x[1] for x in self.t_cand[new_table_id].highest_k_features if x not in self.key)
         # tmp_repo_table_cols.remove(self.key)
         for j in range(len(tmp_repo_table_cols)):
             action = self.action_feature.index([new_table_id, j])
@@ -309,7 +319,7 @@ class ISOFAEnvironment:
 
     def split_data(self, table):
         y = table[self.target]
-        X = table.drop([self.target, self.key], axis=1)
+        X = table.drop([self.target] + self.key, axis=1)
         X_train, X_test, y_train, y_test = train_test_split(X,
                                                             y,
                                                             random_state=104,

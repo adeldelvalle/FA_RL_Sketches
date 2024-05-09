@@ -51,9 +51,14 @@ class Table:
         :return: None, save the correlation on the feature objects.
         """
         y = y_synopsis.attributes[0]
-        sketch_y = self.sketch.join_sketch(y_synopsis, 1)  # Join Table object sketch with the target attribute sketch
+        sketch_y, intersection = self.sketch.join_sketch(y_synopsis, 1)  # Join Table object sketch with the target attribute sketch
+        if intersection <= 1000:
+            return False
+
         self.df_sketch = pd.DataFrame(sketch_y.sketch.values(),
                                       columns=self.sketch.attributes)  # DF of the Sketch
+
+        print(self.df_sketch.head(5))
 
         if self.df_sketch[y].isna().any():  # TEMP STRATEGY FOR NAN VALUES
             target_imputer = SimpleImputer(strategy='most_frequent')
@@ -71,6 +76,8 @@ class Table:
                 feat_obj.abs_corr = abs(feat_obj.corr_target_variable)  # Absolute corr for risk scoring
                 feat_obj.info_gain = self.calc_mutual_info(feat, y)
                 self.feat_corr[feat] = feat_obj
+
+        return True
 
     def calc_mutual_info(self, feat, target):
         if self.table[feat].dtype in ['int64', 'float64']:
